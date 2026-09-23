@@ -1,560 +1,125 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">  <title>Temuoffer - Online Store</title>  <style>
-    * {
-      box-sizing: border-box;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Temuoffer - Online Store</title>
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      color: #222;
-    }
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f5f5f5}
+header{background:#fff;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.logo{font-size:28px;font-weight:bold;color:#ff4b2b}
+.cart-btn{background:#ff4b2b;color:#fff;border:none;padding:10px 15px;border-radius:8px;cursor:pointer}
+.hero{background:#fff;padding:30px 20px;text-align:center}
+.search{max-width:500px;margin:20px auto}
+.search input{width:100%;padding:12px;border:1px solid #ccc;border-radius:8px}
+.categories{display:flex;gap:10px;overflow:auto;padding:15px;background:#fff}
+.categories button{padding:10px 15px;border:1px solid #ddd;border-radius:20px;background:#fff;cursor:pointer}
+.products{padding:20px;max-width:1000px;margin:auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:15px}
+.card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.image{height:160px;display:flex;align-items:center;justify-content:center;font-size:55px;background:#eee}
+.info{padding:15px}
+.price{color:#e63b1f;font-weight:bold;font-size:18px}
+.add{width:100%;margin-top:10px;padding:10px;border:none;background:#ff4b2b;color:#fff;border-radius:8px;cursor:pointer}
+.cart-panel{display:none;position:fixed;right:0;top:0;width:100%;max-width:350px;height:100%;background:#fff;padding:20px;box-shadow:-3px 0 15px rgba(0,0,0,.2);overflow:auto}
+.item{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee}
+.checkout{width:100%;padding:14px;background:#00a859;color:#fff;border:none;border-radius:8px;margin-top:20px;cursor:pointer}
+.close{float:right;border:none;background:none;font-size:28px;cursor:pointer}
+footer{background:#222;color:#fff;text-align:center;padding:20px;margin-top:30px}
+</style>
+</head>
+<body>
 
-    header {
-      background: #ffffff;
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
+<header>
+<div class="logo">Temuoffer</div>
+<button class="cart-btn" onclick="openCart()">🛒 <span id="count">0</span></button>
+</header>
 
-    .logo {
-      font-size: 25px;
-      font-weight: bold;
-      color: #ff4b2b;
-    }
+<section class="hero">
+<h1>Welcome to Temuoffer</h1>
+<p>Great offers for everyone.</p>
+<div class="search">
+<input id="search" placeholder="Search products..." oninput="showProducts()">
+</div>
+</section>
 
-    .cart {
-      background: #ff4b2b;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 8px;
-      font-weight: bold;
-      cursor: pointer;
-    }
+<div class="categories">
+<button onclick="filter('All')">All</button>
+<button onclick="filter('Electronics')">Electronics</button>
+<button onclick="filter('Fashion')">Fashion</button>
+<button onclick="filter('Home')">Home</button>
+<button onclick="filter('Beauty')">Beauty</button>
+</div>
 
-    .hero {
-      background: white;
-      text-align: center;
-      padding: 35px 20px;
-    }
+<section class="products">
+<div id="grid" class="grid"></div>
+</section>
 
-    .hero h1 {
-      margin: 0 0 10px;
-      font-size: 32px;
-    }
+<div id="cart" class="cart-panel">
+<button class="close" onclick="closeCart()">×</button>
+<h2>Your Cart</h2>
+<div id="items"></div>
+<h3>Total: KES <span id="total">0</span></h3>
+<button class="checkout" onclick="checkout()">Proceed to Checkout</button>
+</div>
 
-    .hero p {
-      margin: 0;
-      color: #666;
-    }
+<footer>© 2026 Temuoffer</footer>
 
-    .search-box {
-      max-width: 600px;
-      margin: 20px auto 0;
-    }
-
-    .search-box input {
-      width: 100%;
-      padding: 14px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-
-    .categories {
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      padding: 18px 20px;
-      background: white;
-    }
-
-    .category {
-      border: 1px solid #ddd;
-      background: white;
-      padding: 10px 16px;
-      border-radius: 20px;
-      white-space: nowrap;
-      cursor: pointer;
-    }
-
-    .category.active {
-      background: #ff4b2b;
-      color: white;
-      border-color: #ff4b2b;
-    }
-
-    .products {
-      max-width: 1100px;
-      margin: auto;
-      padding: 25px 20px 50px;
-    }
-
-    .products h2 {
-      margin-top: 0;
-    }
-
-    .product-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 18px;
-    }
-
-    .product {
-      background: white;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-    }
-
-    .product-image {
-      width: 100%;
-      height: 190px;
-      background: #eee;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 55px;
-    }
-
-    .product-info {
-      padding: 15px;
-    }
-
-    .product-name {
-      font-weight: bold;
-      margin-bottom: 8px;
-    }
-
-    .price {
-      color: #e63b1f;
-      font-size: 19px;
-      font-weight: bold;
-      margin-bottom: 12px;
-    }
-
-    .add-cart {
-      width: 100%;
-      border: none;
-      background: #ff4b2b;
-      color: white;
-      padding: 11px;
-      border-radius: 7px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    .cart-panel {
-      display: none;
-      position: fixed;
-      right: 0;
-      top: 0;
-      width: 100%;
-      max-width: 400px;
-      height: 100%;
-      background: white;
-      z-index: 100;
-      box-shadow: -3px 0 15px rgba(0,0,0,0.2);
-      padding: 22px;
-      overflow-y: auto;
-    }
-
-    .cart-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 15px;
-    }
-
-    .close-cart {
-      border: none;
-      background: none;
-      font-size: 28px;
-      cursor: pointer;
-    }
-
-    .cart-item {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 15px 0;
-      border-bottom: 1px solid #eee;
-    }
-
-    .cart-total {
-      font-size: 21px;
-      font-weight: bold;
-      margin-top: 20px;
-    }
-
-    .checkout {
-      width: 100%;
-      margin-top: 20px;
-      padding: 14px;
-      border: none;
-      border-radius: 8px;
-      background: #00a859;
-      color: white;
-      font-size: 17px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    footer {
-      background: #222;
-      color: white;
-      text-align: center;
-      padding: 25px;
-    }
-
-    @media (max-width: 500px) {
-      .hero h1 {
-        font-size: 27px;
-      }
-
-      .product-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 12px;
-      }
-
-      .product-image {
-        height: 150px;
-      }
-    }
-  </style></head><body><header>
-  <div class="logo">Temuoffer</div>  <button class="cart" onclick="openCart()">
-    🛒 Cart (<span id="cartCount">0</span>)
-  </button>
-</header><section class="hero">  <h1>Welcome to Temuoffer</h1>  <p>Shop online for great products and great offers.</p>  <div class="search-box">
-    <input
-      type="text"
-      id="search"
-      placeholder="Search products..."
-      oninput="searchProducts()"
-    >
-  </div></section><div class="categories">  <button class="category active" onclick="filterCategory('All', this)">
-    All
-  </button>  <button class="category" onclick="filterCategory('Electronics', this)">
-    Electronics
-  </button>  <button class="category" onclick="filterCategory('Fashion', this)">
-    Fashion
-  </button>  <button class="category" onclick="filterCategory('Home', this)">
-    Home
-  </button>  <button class="category" onclick="filterCategory('Beauty', this)">
-    Beauty
-  </button></div><section class="products">  <h2>Featured Products</h2>  <div id="productGrid" class="product-grid"></div></section><div id="cartPanel" class="cart-panel">  <div class="cart-header"><h2>Your Cart</h2>
-
-<button class="close-cart" onclick="closeCart()">×</button>
-
-  </div>  <div id="cartItems"></div>  <div class="cart-total">
-    Total: KES <span id="cartTotal">0</span>
-  </div>  <button class="checkout" onclick="checkout()">
-    Proceed to Checkout
-  </button></div><footer>
-  <p>© 2026 Temuoffer. All rights reserved.</p>
-</footer><script>
-
-const products = [
-
-  {
-    id: 1,
-    name: "Wireless Earbuds",
-    price: 1500,
-    category: "Electronics",
-    icon: "🎧"
-  },
-
-  {
-    id: 2,
-    name: "Smart Watch",
-    price: 2500,
-    category: "Electronics",
-    icon: "⌚"
-  },
-
-  {
-    id: 3,
-    name: "Fashion Handbag",
-    price: 1800,
-    category: "Fashion",
-    icon: "👜"
-  },
-
-  {
-    id: 4,
-    name: "Men's Sneakers",
-    price: 3200,
-    category: "Fashion",
-    icon: "👟"
-  },
-
-  {
-    id: 5,
-    name: "Kitchen Set",
-    price: 2200,
-    category: "Home",
-    icon: "🍳"
-  },
-
-  {
-    id: 6,
-    name: "LED Table Lamp",
-    price: 1300,
-    category: "Home",
-    icon: "💡"
-  },
-
-  {
-    id: 7,
-    name: "Beauty Kit",
-    price: 2000,
-    category: "Beauty",
-    icon: "💄"
-  },
-
-  {
-    id: 8,
-    name: "Hair Dryer",
-    price: 2800,
-    category: "Beauty",
-    icon: "💇"
-  }
-
+<script>
+const products=[
+{id:1,name:"Wireless Earbuds",price:1500,cat:"Electronics",icon:"🎧"},
+{id:2,name:"Smart Watch",price:2500,cat:"Electronics",icon:"⌚"},
+{id:3,name:"Handbag",price:1800,cat:"Fashion",icon:"👜"},
+{id:4,name:"Sneakers",price:3200,cat:"Fashion",icon:"👟"},
+{id:5,name:"Kitchen Set",price:2200,cat:"Home",icon:"🍳"},
+{id:6,name:"LED Lamp",price:1300,cat:"Home",icon:"💡"},
+{id:7,name:"Beauty Kit",price:2000,cat:"Beauty",icon:"💄"},
+{id:8,name:"Hair Dryer",price:2800,cat:"Beauty",icon:"💇"}
 ];
 
-let cart = [];
+let cart=[];
+let category="All";
 
-let currentCategory = "All";
-
-
-function displayProducts(list = products) {
-
-  const grid = document.getElementById("productGrid");
-
-  grid.innerHTML = "";
-
-  if (list.length === 0) {
-
-    grid.innerHTML = "<p>No products found.</p>";
-
-    return;
-
-  }
-
-  list.forEach(product => {
-
-    const card = document.createElement("div");
-
-    card.className = "product";
-
-    card.innerHTML = `
-
-      <div class="product-image">
-        ${product.icon}
-      </div>
-
-      <div class="product-info">
-
-        <div class="product-name">
-          ${product.name}
-        </div>
-
-        <div class="price">
-          KES ${product.price.toLocaleString()}
-        </div>
-
-        <button
-          class="add-cart"
-          onclick="addToCart(${product.id})"
-        >
-          Add to Cart
-        </button>
-
-      </div>
-
-    `;
-
-    grid.appendChild(card);
-
-  });
-
+function showProducts(){
+const text=document.getElementById("search").value.toLowerCase();
+const grid=document.getElementById("grid");
+grid.innerHTML="";
+products.filter(p=>(category==="All"||p.cat===category)&&p.name.toLowerCase().includes(text)).forEach(p=>{
+grid.innerHTML+=`
+<div class="card">
+<div class="image">${p.icon}</div>
+<div class="info">
+<b>${p.name}</b>
+<div class="price">KES ${p.price}</div>
+<button class="add" onclick="add(${p.id})">Add to Cart</button>
+</div></div>`;
+});
 }
 
-
-function addToCart(id) {
-
-  const product = products.find(p => p.id === id);
-
-  cart.push(product);
-
-  updateCart();
-
-  alert(product.name + " added to cart.");
-
+function filter(c){category=c;showProducts();}
+function add(id){cart.push(products.find(p=>p.id===id));updateCart();}
+function updateCart(){
+document.getElementById("count").textContent=cart.length;
+let total=0;
+const items=document.getElementById("items");
+items.innerHTML="";
+cart.forEach(i=>{
+total+=i.price;
+items.innerHTML+=`<div class="item"><span>${i.name}</span><span>KES ${i.price}</span></div>`;
+});
+document.getElementById("total").textContent=total;
 }
-
-
-function updateCart() {
-
-  document.getElementById("cartCount").textContent = cart.length;
-
-  const items = document.getElementById("cartItems");
-
-  items.innerHTML = "";
-
-  let total = 0;
-
-  cart.forEach((item, index) => {
-
-    total += item.price;
-
-    const div = document.createElement("div");
-
-    div.className = "cart-item";
-
-    div.innerHTML = `
-
-      <div>
-        <strong>${item.name}</strong><br>
-        KES ${item.price.toLocaleString()}
-      </div>
-
-      <button
-        onclick="removeFromCart(${index})"
-        style="border:none;background:#ffe5e5;color:#b00020;padding:6px;border-radius:5px;"
-      >
-        Remove
-      </button>
-
-    `;
-
-    items.appendChild(div);
-
-  });
-
-  document.getElementById("cartTotal").textContent =
-    total.toLocaleString();
-
+function openCart(){document.getElementById("cart").style.display="block";}
+function closeCart(){document.getElementById("cart").style.display="none";}
+function checkout(){
+if(cart.length===0){alert("Your cart is empty.");return;}
+localStorage.setItem("temuofferCart",JSON.stringify(cart));
+window.location.href="checkout.html";
 }
+showProducts();
+</script>
 
-
-function removeFromCart(index) {
-
-  cart.splice(index, 1);
-
-  updateCart();
-
-}
-
-
-function openCart() {
-
-  document.getElementById("cartPanel").style.display = "block";
-
-}
-
-
-function closeCart() {
-
-  document.getElementById("cartPanel").style.display = "none";
-
-}
-
-
-function filterCategory(category, button) {
-
-  currentCategory = category;
-
-  document.querySelectorAll(".category").forEach(btn => {
-    btn.classList.remove("active");
-  });
-
-  button.classList.add("active");
-
-  const searchText =
-    document.getElementById("search").value.toLowerCase();
-
-  let filtered = products;
-
-  if (category !== "All") {
-
-    filtered = filtered.filter(
-      product => product.category === category
-    );
-
-  }
-
-  if (searchText) {
-
-    filtered = filtered.filter(
-      product =>
-        product.name.toLowerCase().includes(searchText)
-    );
-
-  }
-
-  displayProducts(filtered);
-
-}
-
-
-function searchProducts() {
-
-  const searchText =
-    document.getElementById("search").value.toLowerCase();
-
-  let filtered = products;
-
-  if (currentCategory !== "All") {
-
-    filtered = filtered.filter(
-      product => product.category === currentCategory
-    );
-
-  }
-
-  if (searchText) {
-
-    filtered = filtered.filter(
-      product =>
-        product.name.toLowerCase().includes(searchText)
-    );
-
-  }
-
-  displayProducts(filtered);
-
-}
-
-
-function checkout() {
-
-  if (cart.length === 0) {
-
-    alert("Your cart is empty.");
-
-    return;
-
-  }
-
-  alert(
-    "Checkout will be connected to the secure payment system in the next step."
-  );
-
-}
-
-
-displayProducts();
-
-</script></body>
+</body>
 </html>
