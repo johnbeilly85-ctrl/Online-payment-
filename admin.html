@@ -2,417 +2,248 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Temuoffer Admin Dashboard</title><style>
+<title>Temuoffer Admin</title><style>
 body {
-  font-family: Arial, sans-serif;
-  background: #f5f5f5;
-  margin: 0;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
 }
 
 header {
-  background: #ff6a00;
-  color: white;
-  padding: 15px;
-  text-align: center;
+    background: #ff6a00;
+    color: white;
+    text-align: center;
+    padding: 20px;
 }
 
-.login, .dashboard {
-  max-width: 1000px;
-  margin: 20px auto;
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+.box {
+    max-width: 400px;
+    margin: 40px auto;
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+}
+
+h3 {
+    text-align: center;
 }
 
 input {
-  width: 100%;
-  padding: 12px;
-  margin: 8px 0;
-  box-sizing: border-box;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 16px;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px;
+    margin: 12px 0;
+    border: 1px solid #ccc;
+    border-radius: 7px;
+    font-size: 16px;
 }
 
 button {
-  background: #ff6a00;
-  color: white;
-  border: none;
-  padding: 12px 18px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
+    width: 100%;
+    padding: 14px;
+    margin-top: 10px;
+    background: #ff6a00;
+    color: white;
+    border: none;
+    border-radius: 7px;
+    font-size: 17px;
+    cursor: pointer;
 }
 
 button:hover {
-  background: #e55d00;
+    background: #e55d00;
 }
 
-.hidden {
-  display: none;
-}
-
-.message {
-  margin-top: 15px;
-  padding: 10px;
-  border-radius: 6px;
-  background: #f1f1f1;
-}
-
-.error {
-  background: #ffe5e5;
-  color: #b00020;
-}
-
-.success {
-  background: #e5ffe9;
-  color: #08752b;
-}
-
-.table-container {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  min-width: 850px;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-th, td {
-  border: 1px solid #ddd;
-  padding: 10px;
-  text-align: left;
-}
-
-th {
-  background: #ff6a00;
-  color: white;
-}
-
-@media (max-width: 700px) {
-  .login, .dashboard {
-    margin: 10px;
-    padding: 15px;
-  }
+#error {
+    color: red;
+    text-align: center;
+    margin-top: 15px;
 }
 </style></head><body><header>
-  <h2>Temuoffer Admin Dashboard</h2>
-</header><!-- ADMIN LOGIN --><div class="login" id="loginBox">  <h3>Admin Login</h3><input
-type="text"
-id="username"
-placeholder="Username"
-autocomplete="username"
+    <h2>Temuoffer Admin Dashboard</h2>
+</header><div class="box" id="loginBox"><h3>Admin Login</h3>
 
-«»
+<label>Username</label>
 
 <input
-type="password"
-id="password"
-placeholder="Password"
-autocomplete="current-password"
+    type="text"
+    id="username"
+    placeholder="Enter username"
+>
 
-«»
+<label>Password</label>
 
-  <button type="button" onclick="login()">
+<input
+    type="password"
+    id="password"
+    placeholder="Enter password"
+>
+
+<button onclick="login()">
     Login
-  </button>  <div id="loginMessage" class="message hidden"></div></div><!-- ADMIN DASHBOARD --><div class="dashboard hidden" id="dashboard">  <h3>Customer Orders</h3>  <button type="button" onclick="loadOrders()">
+</button>
+
+<div id="error"></div>
+
+</div><div class="box" id="dashboard" style="display:none;"><h3>Customer Orders</h3>
+
+<button onclick="loadOrders()">
     Refresh Orders
-  </button>  <div id="orderCount" class="message">
-    Loading orders...
-  </div>  <div class="table-container"><table>
+</button>
 
-  <thead>
-    <tr>
-      <th>Order ID</th>
-      <th>Name</th>
-      <th>Phone</th>
-      <th>Email</th>
-      <th>Address</th>
-      <th>Product</th>
-      <th>Quantity</th>
-      <th>Total</th>
-      <th>Status</th>
-    </tr>
-  </thead>
+<p id="count">Loading orders...</p>
 
-  <tbody id="ordersBody">
+<div id="orders"></div>
 
-    <tr>
-      <td colspan="9">Loading...</td>
-    </tr>
+</div><script>
 
-  </tbody>
+const ADMIN_USERNAME = "temuoffer";
+const ADMIN_PASSWORD = "Pkirui00";
 
-</table>
-
-  </div></div><script>
-
-const ADMIN_USER = "temuoffer";
-const ADMIN_PASS = "Pkirui00";
-
-
-/* LOGIN */
 function login() {
 
-  const username =
-    document.getElementById("username").value.trim();
+    const username =
+        document.getElementById("username").value.trim();
 
-  const password =
-    document.getElementById("password").value;
+    const password =
+        document.getElementById("password").value;
 
-  const message =
-    document.getElementById("loginMessage");
-
-
-  if (
-    username === ADMIN_USER &&
-    password === ADMIN_PASS
-  ) {
-
-    document
-      .getElementById("loginBox")
-      .classList.add("hidden");
-
-    document
-      .getElementById("dashboard")
-      .classList.remove("hidden");
-
-    message.classList.add("hidden");
-
-    loadOrders();
-
-  } else {
-
-    message.textContent =
-      "Invalid username or password.";
-
-    message.classList.remove("hidden");
-
-    message.classList.add("error");
-
-  }
-
-}
-
-
-/* PRESS ENTER TO LOGIN */
-document
-  .getElementById("password")
-  .addEventListener("keydown", function(event) {
-
-    if (event.key === "Enter") {
-      login();
-    }
-
-  });
-
-
-/* LOAD ORDERS */
-async function loadOrders() {
-
-  const body =
-    document.getElementById("ordersBody");
-
-  const count =
-    document.getElementById("orderCount");
-
-
-  body.innerHTML =
-    "<tr><td colspan='9'>Loading...</td></tr>";
-
-  count.textContent =
-    "Loading orders...";
-
-
-  try {
-
-    const response =
-      await fetch("/api/orders");
-
-
-    const data =
-      await response.json();
-
-
-    if (!response.ok || !data.success) {
-
-      body.innerHTML =
-        "<tr><td colspan='9'>Failed to load orders</td></tr>";
-
-      count.textContent =
-        data.message ||
-        "Failed to load orders.";
-
-      return;
-
-    }
-
+    const error =
+        document.getElementById("error");
 
     if (
-      !Array.isArray(data.orders) ||
-      data.orders.length === 0
+        username === ADMIN_USERNAME &&
+        password === ADMIN_PASSWORD
     ) {
 
-      body.innerHTML =
-        "<tr><td colspan='9'>No orders found</td></tr>";
+        document.getElementById("loginBox").style.display = "none";
 
-      count.textContent =
-        "No orders found.";
+        document.getElementById("dashboard").style.display = "block";
 
-      return;
+        error.textContent = "";
+
+        loadOrders();
+
+    } else {
+
+        error.textContent =
+            "Invalid username or password.";
 
     }
-
-
-    count.textContent =
-      "Total orders: " + data.orders.length;
-
-
-    body.innerHTML =
-      data.orders.map(function(order) {
-
-
-        const orderId =
-          order.orderId ||
-          order._id ||
-          "N/A";
-
-
-        const name =
-          order.fullName ||
-          order.name ||
-          "N/A";
-
-
-        const phone =
-          order.phone ||
-          "N/A";
-
-
-        const email =
-          order.email ||
-          "N/A";
-
-
-        const address =
-          order.deliveryAddress ||
-          order.address ||
-          "N/A";
-
-
-        const product =
-          order.productName ||
-          order.product ||
-          "Product";
-
-
-        const quantity =
-          order.quantity ||
-          1;
-
-
-        const currency =
-          order.currency ||
-          "NZD";
-
-
-        const total =
-          Number(
-            order.total ||
-            order.amount ||
-            0
-          ).toFixed(2);
-
-
-        const status =
-          order.status ||
-          "Pending Payment";
-
-
-        return `
-
-          <tr>
-
-            <td>
-              ${escapeHtml(orderId)}
-            </td>
-
-            <td>
-              ${escapeHtml(name)}
-            </td>
-
-            <td>
-              ${escapeHtml(phone)}
-            </td>
-
-            <td>
-              ${escapeHtml(email)}
-            </td>
-
-            <td>
-              ${escapeHtml(address)}
-            </td>
-
-            <td>
-              ${escapeHtml(product)}
-            </td>
-
-            <td>
-              ${escapeHtml(quantity)}
-            </td>
-
-            <td>
-              ${escapeHtml(currency)}
-              ${escapeHtml(total)}
-            </td>
-
-            <td>
-              ${escapeHtml(status)}
-            </td>
-
-          </tr>
-
-        `;
-
-      }).join("");
-
-
-  } catch (error) {
-
-    console.error("Order loading error:", error);
-
-
-    body.innerHTML =
-      "<tr><td colspan='9'>Server error</td></tr>";
-
-
-    count.textContent =
-      "Unable to connect to server.";
-
-  }
-
 }
 
+async function loadOrders() {
 
-/* PREVENT HTML INJECTION */
-function escapeHtml(value) {
+    const ordersDiv =
+        document.getElementById("orders");
 
-  return String(value)
+    const count =
+        document.getElementById("count");
 
-    .replace(/&/g, "&amp;")
+    ordersDiv.innerHTML = "Loading...";
 
-    .replace(/</g, "&lt;")
+    try {
 
-    .replace(/>/g, "&gt;")
+        const response =
+            await fetch("/api/orders");
 
-    .replace(/"/g, "&quot;")
+        const data =
+            await response.json();
 
-    .replace(/'/g, "&#039;");
+        if (!response.ok || !data.success) {
 
+            ordersDiv.innerHTML =
+                "Unable to load orders.";
+
+            count.textContent =
+                data.message || "Error";
+
+            return;
+        }
+
+        if (!data.orders || data.orders.length === 0) {
+
+            ordersDiv.innerHTML =
+                "<p>No orders found.</p>";
+
+            count.textContent =
+                "Total orders: 0";
+
+            return;
+        }
+
+        count.textContent =
+            "Total orders: " + data.orders.length;
+
+        ordersDiv.innerHTML =
+            data.orders.map(order => {
+
+                return `
+                <div style="
+                    border:1px solid #ddd;
+                    padding:15px;
+                    margin:12px 0;
+                    border-radius:8px;
+                    background:#fafafa;
+                ">
+
+                    <strong>Order ID:</strong>
+                    ${order.orderId || "N/A"}<br><br>
+
+                    <strong>Name:</strong>
+                    ${order.fullName || order.name || "N/A"}<br>
+
+                    <strong>Phone:</strong>
+                    ${order.phone || "N/A"}<br>
+
+                    <strong>Email:</strong>
+                    ${order.email || "N/A"}<br>
+
+                    <strong>Address:</strong>
+                    ${order.deliveryAddress || order.address || "N/A"}<br>
+
+                    <strong>Product:</strong>
+                    ${order.productName || "Product"}<br>
+
+                    <strong>Quantity:</strong>
+                    ${order.quantity || 1}<br>
+
+                    <strong>Total:</strong>
+                    ${order.currency || "NZD"}
+                    ${Number(order.total || 0).toFixed(2)}<br>
+
+                    <strong>Status:</strong>
+                    ${order.status || "Pending Payment"}
+
+                </div>
+                `;
+
+            }).join("");
+
+    } catch (error) {
+
+        console.error(error);
+
+        ordersDiv.innerHTML =
+            "Server connection error.";
+
+        count.textContent =
+            "Unable to connect to server.";
+
+    }
 }
+
+document
+    .getElementById("password")
+    .addEventListener("keydown", function(event) {
+
+        if (event.key === "Enter") {
+            login();
+        }
+
+    });
 
 </script></body>
 </html>
