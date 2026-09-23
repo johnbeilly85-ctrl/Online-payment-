@@ -101,6 +101,20 @@ header{
   margin-top:0;
 }
 
+.loading{
+  text-align:center;
+  padding:30px;
+  color:#666;
+}
+
+.error{
+  background:#ffe5e5;
+  color:#b00020;
+  padding:15px;
+  border-radius:8px;
+  text-align:center;
+}
+
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
@@ -112,6 +126,7 @@ header{
   border-radius:12px;
   overflow:hidden;
   box-shadow:0 2px 10px rgba(0,0,0,.08);
+  position:relative;
 }
 
 .image{
@@ -119,8 +134,30 @@ header{
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:60px;
   background:#eee;
+  overflow:hidden;
+}
+
+.image img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.no-image{
+  font-size:55px;
+}
+
+.offer-badge{
+  position:absolute;
+  top:10px;
+  left:10px;
+  background:#ff4b2b;
+  color:#fff;
+  padding:6px 9px;
+  border-radius:6px;
+  font-size:12px;
+  font-weight:bold;
 }
 
 .info{
@@ -132,10 +169,36 @@ header{
   margin-bottom:8px;
 }
 
+.category{
+  color:#777;
+  font-size:13px;
+  margin-bottom:8px;
+}
+
+.original{
+  color:#888;
+  text-decoration:line-through;
+  font-size:14px;
+}
+
 .price{
   color:#e63b1f;
   font-weight:bold;
   font-size:19px;
+  margin-top:4px;
+}
+
+.save{
+  color:#00a859;
+  font-size:13px;
+  font-weight:bold;
+  margin-top:5px;
+}
+
+.stock{
+  font-size:13px;
+  color:#666;
+  margin-top:7px;
 }
 
 .add{
@@ -148,6 +211,11 @@ header{
   border-radius:8px;
   cursor:pointer;
   font-weight:bold;
+}
+
+.add:disabled{
+  background:#aaa;
+  cursor:not-allowed;
 }
 
 .cart-panel{
@@ -230,116 +298,146 @@ footer{
   .image{
     height:150px;
   }
-}
-</style></head><body><header>  <div class="logo">
-    Temuoffer
-  </div>  <button class="cart-btn" onclick="openCart()">
-    🛒 Cart (<span id="count">0</span>)
-  </button></header><section class="hero">  <h1>Welcome to Temuoffer</h1>  <p>
-    Shop online for great products and great offers.
-  </p>  <div class="search"><input
-  id="search"
-  type="text"
-  placeholder="Search products..."
-  oninput="showProducts()"
->
 
-  </div></section><div class="categories">  <button class="active" onclick="filterCategory('All',this)">
-    All
-  </button>  <button onclick="filterCategory('Electronics',this)">
-    Electronics
-  </button>  <button onclick="filterCategory('Fashion',this)">
-    Fashion
-  </button>  <button onclick="filterCategory('Home',this)">
-    Home
-  </button>  <button onclick="filterCategory('Beauty',this)">
-    Beauty
-  </button></div><section class="products">  <h2>Featured Products</h2>  <div id="grid" class="grid"></div></section><div id="cart" class="cart-panel"><button class="close" onclick="closeCart()">×</button>
+  .info{
+    padding:10px;
+  }
+
+  .name{
+    font-size:14px;
+  }
+
+  .price{
+    font-size:17px;
+  }
+}
+</style></head><body><header>
+  <div class="logo">Temuoffer</div>  <button class="cart-btn" onclick="openCart()">
+    🛒 Cart (<span id="count">0</span>)
+  </button>
+</header><section class="hero">  <h1>Welcome to Temuoffer</h1>  <p>
+    Shop online for great products and great offers.
+  </p>  <div class="search">
+    <input
+      id="search"
+      type="text"
+      placeholder="Search products..."
+      oninput="showProducts()"
+    >
+  </div></section><div class="categories"><button class="active"
+onclick="filterCategory('All',this)">
+All
+</button>
+
+<button
+onclick="filterCategory('Electronics',this)">
+Electronics
+</button>
+
+<button
+onclick="filterCategory('Fashion',this)">
+Fashion
+</button>
+
+<button
+onclick="filterCategory('Home',this)">
+Home
+</button>
+
+<button
+onclick="filterCategory('Beauty',this)">
+Beauty
+</button>
+
+<button
+onclick="filterCategory('Phones',this)">
+Phones
+</button>
+
+<button
+onclick="filterCategory('Laptops & Tablets',this)">
+Laptops & Tablets
+</button>
+
+</div><section class="products">  <h2>Featured Products</h2>  <div id="message" class="loading">
+    Loading products...
+  </div>  <div id="grid" class="grid"></div></section><div id="cart" class="cart-panel"><button class="close" onclick="closeCart()">×</button>
 
   <h2>Your Cart</h2>  <div id="items"></div>  <div class="total">
     Total: NZ$ <span id="total">0.00</span>
   </div>  <button class="checkout" onclick="checkout()">
     Proceed to Checkout
-  </button></div><footer>© 2026 Temuoffer. All rights reserved.
-
+  </button></div><footer>
+  © 2026 Temuoffer. All rights reserved.
 </footer><script>
 
-const products = [
-
-  {
-    id:1,
-    name:"Wireless Earbuds",
-    price:39.99,
-    cat:"Electronics",
-    icon:"🎧"
-  },
-
-  {
-    id:2,
-    name:"Smart Watch",
-    price:59.99,
-    cat:"Electronics",
-    icon:"⌚"
-  },
-
-  {
-    id:3,
-    name:"Fashion Handbag",
-    price:49.99,
-    cat:"Fashion",
-    icon:"👜"
-  },
-
-  {
-    id:4,
-    name:"Men's Sneakers",
-    price:69.99,
-    cat:"Fashion",
-    icon:"👟"
-  },
-
-  {
-    id:5,
-    name:"Kitchen Set",
-    price:44.99,
-    cat:"Home",
-    icon:"🍳"
-  },
-
-  {
-    id:6,
-    name:"LED Table Lamp",
-    price:34.99,
-    cat:"Home",
-    icon:"💡"
-  },
-
-  {
-    id:7,
-    name:"Beauty Kit",
-    price:39.99,
-    cat:"Beauty",
-    icon:"💄"
-  },
-
-  {
-    id:8,
-    name:"Hair Dryer",
-    price:54.99,
-    cat:"Beauty",
-    icon:"💇"
-  }
-
-];
+let products = [];
 
 let cart = [];
 
 let category = "All";
 
 
+/* ==========================
+   LOAD PRODUCTS FROM SERVER
+========================== */
+
+async function loadProducts(){
+
+  const message =
+    document.getElementById("message");
+
+  try{
+
+    const response =
+      await fetch("/api/products");
+
+    if(!response.ok){
+      throw new Error("Server error");
+    }
+
+    const data =
+      await response.json();
+
+    if(!data.success){
+      throw new Error(
+        data.message || "Failed to load products"
+      );
+    }
+
+    products =
+      Array.isArray(data.products)
+      ? data.products
+      : [];
+
+    message.style.display = "none";
+
+    showProducts();
+
+  }catch(error){
+
+    console.error(
+      "Product loading error:",
+      error
+    );
+
+    message.className = "error";
+
+    message.innerHTML =
+      "Unable to load products. Please refresh the page.";
+
+  }
+
+}
+
+
+/* ==========================
+   MONEY
+========================== */
+
 function money(amount){
 
-  return Number(amount).toLocaleString(
+  return Number(amount || 0).toLocaleString(
     "en-NZ",
     {
       minimumFractionDigits:2,
@@ -350,12 +448,19 @@ function money(amount){
 }
 
 
+/* ==========================
+   SHOW PRODUCTS
+========================== */
+
 function showProducts(){
 
+  const searchInput =
+    document.getElementById("search");
+
   const text =
-    document.getElementById("search")
-    .value
-    .toLowerCase();
+    searchInput
+      ? searchInput.value.toLowerCase()
+      : "";
 
   const grid =
     document.getElementById("grid");
@@ -363,18 +468,29 @@ function showProducts(){
   grid.innerHTML = "";
 
   const filtered =
-    products.filter(product =>
+    products.filter(product => {
 
-      (category === "All" ||
-       product.cat === category)
+      const productCategory =
+        product.category || product.cat || "";
 
-      &&
+      const productName =
+        product.name || "";
 
-      product.name
-        .toLowerCase()
-        .includes(text)
+      return (
 
-    );
+        (category === "All" ||
+         productCategory === category)
+
+        &&
+
+        productName
+          .toLowerCase()
+          .includes(text)
+
+      );
+
+    });
+
 
   if(filtered.length === 0){
 
@@ -385,31 +501,147 @@ function showProducts(){
 
   }
 
+
   filtered.forEach(product => {
+
+    const id =
+      product.productId ||
+      product._id;
+
+    const name =
+      product.name || "Product";
+
+    const cat =
+      product.category || "General";
+
+    const offerPrice =
+      Number(
+        product.offerPrice ??
+        product.price ??
+        0
+      );
+
+    const originalPrice =
+      Number(
+        product.originalPrice ??
+        offerPrice
+      );
+
+    const stock =
+      Number(product.stock || 0);
+
+    const image =
+      product.image || "";
+
+    const onOffer =
+      product.onOffer === true &&
+      originalPrice > offerPrice;
+
+    const discount =
+      Number(
+        product.discountPercent || 0
+      );
+
+
+    let imageHTML = "";
+
+    if(image){
+
+      imageHTML = `
+        <img
+          src="${escapeHTML(image)}"
+          alt="${escapeHTML(name)}"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='block';"
+        >
+        <div
+          class="no-image"
+          style="display:none"
+        >
+          🛍️
+        </div>
+      `;
+
+    }else{
+
+      imageHTML = `
+        <div class="no-image">
+          🛍️
+        </div>
+      `;
+
+    }
+
 
     grid.innerHTML += `
 
       <div class="card">
 
+        ${
+          onOffer
+          ? `
+            <div class="offer-badge">
+              🔥 SAVE ${discount}%
+            </div>
+          `
+          : ""
+        }
+
         <div class="image">
-          ${product.icon}
+          ${imageHTML}
         </div>
 
         <div class="info">
 
           <div class="name">
-            ${product.name}
+            ${escapeHTML(name)}
           </div>
 
+          <div class="category">
+            ${escapeHTML(cat)}
+          </div>
+
+          ${
+            onOffer
+            ? `
+              <div class="original">
+                NZ$ ${money(originalPrice)}
+              </div>
+            `
+            : ""
+          }
+
           <div class="price">
-            NZ$ ${money(product.price)}
+            NZ$ ${money(offerPrice)}
+          </div>
+
+          ${
+            onOffer
+            ? `
+              <div class="save">
+                SAVE ${discount}%
+              </div>
+            `
+            : ""
+          }
+
+          <div class="stock">
+            ${
+              stock > 0
+              ? `In stock: ${stock}`
+              : "Out of stock"
+            }
           </div>
 
           <button
             class="add"
-            onclick="addToCart(${product.id})"
+            onclick="addToCart('${escapeJS(String(id))}')"
+            ${stock <= 0 ? "disabled" : ""}
           >
-            Add to Cart
+            ${
+              stock > 0
+              ? "Add to Cart"
+              : "Out of Stock"
+            }
           </button>
 
         </div>
@@ -422,6 +654,40 @@ function showProducts(){
 
 }
 
+
+/* ==========================
+   ESCAPE HTML
+========================== */
+
+function escapeHTML(value){
+
+  return String(value)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+
+}
+
+
+/* ==========================
+   ESCAPE JAVASCRIPT
+========================== */
+
+function escapeJS(value){
+
+  return String(value)
+    .replace(/\\/g,"\\\\")
+    .replace(/'/g,"\\'")
+    .replace(/"/g,'\\"');
+
+}
+
+
+/* ==========================
+   CATEGORY
+========================== */
 
 function filterCategory(cat,button){
 
@@ -440,17 +706,58 @@ function filterCategory(cat,button){
 }
 
 
+/* ==========================
+   ADD TO CART
+========================== */
+
 function addToCart(id){
 
   const product =
-    products.find(p => p.id === id);
+    products.find(p =>
+      String(p.productId || p._id) === String(id)
+    );
 
-  cart.push(product);
+  if(!product){
+    alert("Product not found.");
+    return;
+  }
+
+  const stock =
+    Number(product.stock || 0);
+
+  if(stock <= 0){
+    alert("This product is out of stock.");
+    return;
+  }
+
+  cart.push({
+
+    id:
+      product.productId ||
+      product._id,
+
+    name:
+      product.name,
+
+    price:
+      Number(
+        product.offerPrice ??
+        product.price ??
+        0
+      ),
+
+    quantity:1
+
+  });
 
   updateCart();
 
 }
 
+
+/* ==========================
+   REMOVE FROM CART
+========================== */
 
 function removeFromCart(index){
 
@@ -460,6 +767,10 @@ function removeFromCart(index){
 
 }
 
+
+/* ==========================
+   UPDATE CART
+========================== */
 
 function updateCart(){
 
@@ -473,9 +784,12 @@ function updateCart(){
 
   let total = 0;
 
+
   cart.forEach((item,index) => {
 
-    total += Number(item.price);
+    total +=
+      Number(item.price || 0);
+
 
     items.innerHTML += `
 
@@ -484,7 +798,7 @@ function updateCart(){
         <div>
 
           <strong>
-            ${item.name}
+            ${escapeHTML(item.name)}
           </strong>
 
           <br>
@@ -506,11 +820,16 @@ function updateCart(){
 
   });
 
+
   document.getElementById("total")
     .textContent = money(total);
 
 }
 
+
+/* ==========================
+   OPEN CART
+========================== */
 
 function openCart(){
 
@@ -520,6 +839,10 @@ function openCart(){
 }
 
 
+/* ==========================
+   CLOSE CART
+========================== */
+
 function closeCart(){
 
   document.getElementById("cart")
@@ -527,6 +850,10 @@ function closeCart(){
 
 }
 
+
+/* ==========================
+   CHECKOUT
+========================== */
 
 function checkout(){
 
@@ -538,10 +865,12 @@ function checkout(){
 
   }
 
+
   localStorage.setItem(
     "temuofferCart",
     JSON.stringify(cart)
   );
+
 
   window.location.href =
     "checkout.html";
@@ -549,7 +878,11 @@ function checkout(){
 }
 
 
-showProducts();
+/* ==========================
+   START
+========================== */
+
+loadProducts();
 
 </script></body>
 </html>
