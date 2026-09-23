@@ -17,38 +17,40 @@ header {
 }
 
 .box {
-    max-width: 400px;
-    margin: 40px auto;
+    max-width: 1100px;
+    margin: 25px auto;
     background: white;
-    padding: 25px;
+    padding: 20px;
     border-radius: 12px;
-    box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+}
+
+.login-box {
+    max-width: 400px;
 }
 
 h3 {
     text-align: center;
 }
 
-input {
-    display: block;
+input,
+select {
     width: 100%;
     box-sizing: border-box;
-    padding: 14px;
-    margin: 12px 0;
+    padding: 12px;
+    margin: 8px 0;
     border: 1px solid #ccc;
     border-radius: 7px;
     font-size: 16px;
 }
 
 button {
-    width: 100%;
-    padding: 14px;
-    margin-top: 10px;
     background: #ff6a00;
     color: white;
     border: none;
+    padding: 11px 15px;
     border-radius: 7px;
-    font-size: 17px;
+    font-size: 15px;
     cursor: pointer;
 }
 
@@ -56,14 +58,80 @@ button:hover {
     background: #e55d00;
 }
 
-#error {
-    color: red;
-    text-align: center;
+.login-button {
+    width: 100%;
+    padding: 14px;
+    font-size: 17px;
+}
+
+.hidden {
+    display: none;
+}
+
+.message {
+    padding: 12px;
+    margin: 15px 0;
+    border-radius: 7px;
+    background: #f1f1f1;
+}
+
+.error {
+    background: #ffe5e5;
+    color: #b00020;
+}
+
+.success {
+    background: #e5ffe9;
+    color: #08752b;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    min-width: 1100px;
+    border-collapse: collapse;
     margin-top: 15px;
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+th {
+    background: #ff6a00;
+    color: white;
+}
+
+.status-cell select {
+    min-width: 170px;
+    margin: 0 0 6px 0;
+}
+
+.save-button {
+    background: #168a3a;
+    width: 100%;
+}
+
+.save-button:hover {
+    background: #116b2d;
+}
+
+@media (max-width: 700px) {
+    .box {
+        margin: 10px;
+        padding: 15px;
+    }
 }
 </style></head><body><header>
     <h2>Temuoffer Admin Dashboard</h2>
-</header><div class="box" id="loginBox"><h3>Admin Login</h3>
+</header><!-- LOGIN --><div class="box login-box" id="loginBox"><h3>Admin Login</h3>
 
 <label>Username</label>
 
@@ -71,6 +139,7 @@ button:hover {
     type="text"
     id="username"
     placeholder="Enter username"
+    autocomplete="username"
 >
 
 <label>Password</label>
@@ -79,28 +148,70 @@ button:hover {
     type="password"
     id="password"
     placeholder="Enter password"
+    autocomplete="current-password"
 >
 
-<button onclick="login()">
+<button
+    class="login-button"
+    onclick="login()"
+>
     Login
 </button>
 
-<div id="error"></div>
+<div id="loginError"></div>
 
-</div><div class="box" id="dashboard" style="display:none;"><h3>Customer Orders</h3>
+</div><!-- DASHBOARD --><div class="box hidden" id="dashboard"><h3>Customer Orders</h3>
 
 <button onclick="loadOrders()">
     Refresh Orders
 </button>
 
-<p id="count">Loading orders...</p>
+<div id="orderCount" class="message">
+    Loading orders...
+</div>
 
-<div id="orders"></div>
+<div id="statusMessage"></div>
+
+<div class="table-container">
+
+    <table>
+
+        <thead>
+
+            <tr>
+                <th>Order ID</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Address</th>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Total</th>
+                <th>Status</th>
+            </tr>
+
+        </thead>
+
+        <tbody id="ordersBody">
+
+            <tr>
+                <td colspan="9">
+                    Loading orders...
+                </td>
+            </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
 
 </div><script>
 
 const ADMIN_USERNAME = "temuoffer";
 const ADMIN_PASSWORD = "Pkirui00";
+
+/* LOGIN */
 
 function login() {
 
@@ -111,38 +222,60 @@ function login() {
         document.getElementById("password").value;
 
     const error =
-        document.getElementById("error");
+        document.getElementById("loginError");
 
     if (
         username === ADMIN_USERNAME &&
         password === ADMIN_PASSWORD
     ) {
 
-        document.getElementById("loginBox").style.display = "none";
+        document
+            .getElementById("loginBox")
+            .classList.add("hidden");
 
-        document.getElementById("dashboard").style.display = "block";
+        document
+            .getElementById("dashboard")
+            .classList.remove("hidden");
 
-        error.textContent = "";
+        error.innerHTML = "";
 
         loadOrders();
 
     } else {
 
-        error.textContent =
-            "Invalid username or password.";
+        error.innerHTML =
+            '<div class="message error">Invalid username or password.</div>';
 
     }
 }
 
+/* ENTER TO LOGIN */
+
+document
+    .getElementById("password")
+    .addEventListener("keydown", function(event) {
+
+        if (event.key === "Enter") {
+            login();
+        }
+
+    });
+
+/* LOAD ORDERS */
+
 async function loadOrders() {
 
-    const ordersDiv =
-        document.getElementById("orders");
+    const body =
+        document.getElementById("ordersBody");
 
     const count =
-        document.getElementById("count");
+        document.getElementById("orderCount");
 
-    ordersDiv.innerHTML = "Loading...";
+    body.innerHTML =
+        "<tr><td colspan='9'>Loading...</td></tr>";
+
+    count.textContent =
+        "Loading orders...";
 
     try {
 
@@ -154,19 +287,22 @@ async function loadOrders() {
 
         if (!response.ok || !data.success) {
 
-            ordersDiv.innerHTML =
-                "Unable to load orders.";
+            body.innerHTML =
+                "<tr><td colspan='9'>Unable to load orders.</td></tr>";
 
             count.textContent =
-                data.message || "Error";
+                data.message || "Unable to load orders.";
 
             return;
         }
 
-        if (!data.orders || data.orders.length === 0) {
+        if (
+            !Array.isArray(data.orders) ||
+            data.orders.length === 0
+        ) {
 
-            ordersDiv.innerHTML =
-                "<p>No orders found.</p>";
+            body.innerHTML =
+                "<tr><td colspan='9'>No orders found.</td></tr>";
 
             count.textContent =
                 "Total orders: 0";
@@ -177,47 +313,144 @@ async function loadOrders() {
         count.textContent =
             "Total orders: " + data.orders.length;
 
-        ordersDiv.innerHTML =
-            data.orders.map(order => {
+        body.innerHTML =
+            data.orders.map(function(order) {
+
+                const orderId =
+                    escapeHtml(order.orderId || "N/A");
+
+                const name =
+                    escapeHtml(
+                        order.fullName ||
+                        order.name ||
+                        "N/A"
+                    );
+
+                const phone =
+                    escapeHtml(
+                        order.phone || "N/A"
+                    );
+
+                const email =
+                    escapeHtml(
+                        order.email || "N/A"
+                    );
+
+                const address =
+                    escapeHtml(
+                        order.deliveryAddress ||
+                        order.address ||
+                        "N/A"
+                    );
+
+                const product =
+                    escapeHtml(
+                        order.productName ||
+                        "Product"
+                    );
+
+                const quantity =
+                    escapeHtml(
+                        order.quantity || 1
+                    );
+
+                const currency =
+                    escapeHtml(
+                        order.currency || "NZD"
+                    );
+
+                const total =
+                    Number(
+                        order.total || 0
+                    ).toFixed(2);
+
+                const status =
+                    order.status ||
+                    "Pending Payment";
 
                 return `
-                <div style="
-                    border:1px solid #ddd;
-                    padding:15px;
-                    margin:12px 0;
-                    border-radius:8px;
-                    background:#fafafa;
-                ">
 
-                    <strong>Order ID:</strong>
-                    ${order.orderId || "N/A"}<br><br>
+                    <tr>
 
-                    <strong>Name:</strong>
-                    ${order.fullName || order.name || "N/A"}<br>
+                        <td>${orderId}</td>
 
-                    <strong>Phone:</strong>
-                    ${order.phone || "N/A"}<br>
+                        <td>${name}</td>
 
-                    <strong>Email:</strong>
-                    ${order.email || "N/A"}<br>
+                        <td>${phone}</td>
 
-                    <strong>Address:</strong>
-                    ${order.deliveryAddress || order.address || "N/A"}<br>
+                        <td>${email}</td>
 
-                    <strong>Product:</strong>
-                    ${order.productName || "Product"}<br>
+                        <td>${address}</td>
 
-                    <strong>Quantity:</strong>
-                    ${order.quantity || 1}<br>
+                        <td>${product}</td>
 
-                    <strong>Total:</strong>
-                    ${order.currency || "NZD"}
-                    ${Number(order.total || 0).toFixed(2)}<br>
+                        <td>${quantity}</td>
 
-                    <strong>Status:</strong>
-                    ${order.status || "Pending Payment"}
+                        <td>
+                            ${currency} ${total}
+                        </td>
 
-                </div>
+                        <td class="status-cell">
+
+                            <select
+                                id="status-${encodeURIComponent(order.orderId)}"
+                            >
+
+                                <option
+                                    value="Pending Payment"
+                                    ${status === "Pending Payment" ? "selected" : ""}
+                                >
+                                    Pending Payment
+                                </option>
+
+                                <option
+                                    value="Payment Received"
+                                    ${status === "Payment Received" ? "selected" : ""}
+                                >
+                                    Payment Received
+                                </option>
+
+                                <option
+                                    value="Processing"
+                                    ${status === "Processing" ? "selected" : ""}
+                                >
+                                    Processing
+                                </option>
+
+                                <option
+                                    value="Shipped"
+                                    ${status === "Shipped" ? "selected" : ""}
+                                >
+                                    Shipped
+                                </option>
+
+                                <option
+                                    value="Delivered"
+                                    ${status === "Delivered" ? "selected" : ""}
+                                >
+                                    Delivered
+                                </option>
+
+                                <option
+                                    value="Cancelled"
+                                    ${status === "Cancelled" ? "selected" : ""}
+                                >
+                                    Cancelled
+                                </option>
+
+                            </select>
+
+                            <button
+                                class="save-button"
+                                onclick="updateStatus('${escapeJs(order.orderId)}')"
+                            >
+                                Save Status
+                            </button>
+
+                        </td>
+
+                    </tr>
+
                 `;
 
             }).join("");
@@ -226,24 +459,112 @@ async function loadOrders() {
 
         console.error(error);
 
-        ordersDiv.innerHTML =
-            "Server connection error.";
+        body.innerHTML =
+            "<tr><td colspan='9'>Server connection error.</td></tr>";
 
         count.textContent =
             "Unable to connect to server.";
-
     }
 }
 
-document
-    .getElementById("password")
-    .addEventListener("keydown", function(event) {
+/* UPDATE STATUS */
 
-        if (event.key === "Enter") {
-            login();
+async function updateStatus(orderId) {
+
+    const select =
+        document.getElementById(
+            "status-" +
+            encodeURIComponent(orderId)
+        );
+
+    const status =
+        select.value;
+
+    const message =
+        document.getElementById("statusMessage");
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/orders/" +
+                encodeURIComponent(orderId) +
+                "/status",
+                {
+                    method: "PUT",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        status: status
+                    })
+                }
+            );
+
+        const data =
+            await response.json();
+
+        if (!response.ok || !data.success) {
+
+            message.innerHTML =
+                '<div class="message error">' +
+                escapeHtml(
+                    data.message ||
+                    "Unable to update status."
+                ) +
+                "</div>";
+
+            return;
         }
 
-    });
+        message.innerHTML =
+            '<div class="message success">' +
+            "Order " +
+            escapeHtml(orderId) +
+            " updated to " +
+            escapeHtml(status) +
+            "." +
+            "</div>";
+
+        setTimeout(function() {
+            message.innerHTML = "";
+        }, 3000);
+
+    } catch (error) {
+
+        console.error(error);
+
+        message.innerHTML =
+            '<div class="message error">' +
+            "Unable to connect to server." +
+            "</div>";
+    }
+}
+
+/* HTML SECURITY */
+
+function escapeHtml(value) {
+
+    return String(value)
+
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function escapeJs(value) {
+
+    return String(value)
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, "\\n")
+        .replace(/\r/g, "\\r");
+}
 
 </script></body>
 </html>
