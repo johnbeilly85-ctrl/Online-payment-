@@ -1,0 +1,476 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Temuoffer - Checkout</title><style>
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f4f7fb;
+  color:#222;
+}
+
+header{
+  background:#fff;
+  padding:16px 20px;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+
+.header-inner{
+  max-width:900px;
+  margin:auto;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.logo{
+  font-size:27px;
+  font-weight:bold;
+  color:#ff4b2b;
+}
+
+.back{
+  text-decoration:none;
+  color:#333;
+  font-weight:bold;
+}
+
+.container{
+  max-width:900px;
+  margin:30px auto;
+  padding:0 20px 50px;
+}
+
+.card{
+  background:#fff;
+  padding:25px;
+  border-radius:14px;
+  box-shadow:0 3px 15px rgba(0,0,0,.07);
+  margin-bottom:20px;
+}
+
+h1{
+  margin-top:0;
+}
+
+h2{
+  margin-top:0;
+  font-size:21px;
+}
+
+label{
+  display:block;
+  margin:15px 0 7px;
+  font-weight:bold;
+}
+
+input,
+textarea{
+  width:100%;
+  padding:13px;
+  border:1px solid #ccc;
+  border-radius:8px;
+  font-size:16px;
+  font-family:Arial,sans-serif;
+}
+
+textarea{
+  min-height:90px;
+  resize:vertical;
+}
+
+.order-item{
+  display:flex;
+  justify-content:space-between;
+  gap:15px;
+  padding:13px 0;
+  border-bottom:1px solid #eee;
+}
+
+.order-item:last-child{
+  border-bottom:none;
+}
+
+.product-name{
+  font-weight:bold;
+}
+
+.product-price{
+  font-weight:bold;
+}
+
+.total{
+  display:flex;
+  justify-content:space-between;
+  font-size:21px;
+  font-weight:bold;
+  margin-top:20px;
+  padding-top:18px;
+  border-top:2px solid #eee;
+}
+
+.pay-button{
+  width:100%;
+  margin-top:20px;
+  padding:15px;
+  border:none;
+  border-radius:8px;
+  background:#00a859;
+  color:white;
+  font-size:18px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.pay-button:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+}
+
+.message{
+  display:none;
+  margin-top:15px;
+  padding:12px;
+  border-radius:8px;
+  text-align:center;
+}
+
+.error{
+  background:#ffe5e5;
+  color:#b00020;
+}
+
+.success{
+  background:#e4f8ec;
+  color:#087a3b;
+}
+
+.empty{
+  text-align:center;
+}
+
+.empty a{
+  display:inline-block;
+  margin-top:15px;
+  padding:12px 18px;
+  background:#ff4b2b;
+  color:white;
+  text-decoration:none;
+  border-radius:8px;
+  font-weight:bold;
+}
+
+@media(max-width:600px){
+
+  .container{
+    margin-top:20px;
+  }
+
+  .card{
+    padding:20px;
+  }
+
+  .header-inner{
+    gap:10px;
+  }
+
+  .logo{
+    font-size:23px;
+  }
+}
+</style></head><body><header>  <div class="header-inner"><div class="logo">
+  Temuoffer
+</div>
+
+<a href="index.html" class="back">
+  ← Shop
+</a>
+
+  </div></header><div class="container">  <h1>Checkout</h1>  <div id="emptyCart" class="card empty" style="display:none;"><h2>Your cart is empty</h2>
+
+<p>
+  Please return to the store and select a product.
+</p>
+
+<a href="index.html">
+  Browse Products
+</a>
+
+  </div>  <div id="checkoutContent"><div class="card">
+
+  <h2>Customer Information</h2>
+
+  <form id="checkoutForm">
+
+    <label for="name">
+      Full Name
+    </label>
+
+    <input
+      type="text"
+      id="name"
+      placeholder="Enter your full name"
+      required
+    >
+
+    <label for="email">
+      Email Address
+    </label>
+
+    <input
+      type="email"
+      id="email"
+      placeholder="Enter your email address"
+      required
+    >
+
+    <label for="phone">
+      Phone Number
+    </label>
+
+    <input
+      type="tel"
+      id="phone"
+      placeholder="Enter your phone number"
+      required
+    >
+
+    <label for="address">
+      Delivery Address
+    </label>
+
+    <textarea
+      id="address"
+      placeholder="Enter your full delivery address"
+      required
+    ></textarea>
+
+  </form>
+
+</div>
+
+<div class="card">
+
+  <h2>Order Summary</h2>
+
+  <div id="orderItems"></div>
+
+  <div class="total">
+
+    <span>Total</span>
+
+    <span>
+      NZ$ <span id="orderTotal">0.00</span>
+    </span>
+
+  </div>
+
+  <button
+    type="button"
+    class="pay-button"
+    id="payButton"
+    onclick="payNow()"
+  >
+    Pay Now
+  </button>
+
+  <div id="message" class="message"></div>
+
+</div>
+
+  </div></div><script>
+
+let cart = [];
+
+try{
+
+  cart = JSON.parse(
+    localStorage.getItem("temuofferCart") || "[]"
+  );
+
+}catch(error){
+
+  cart = [];
+
+}
+
+
+function money(amount){
+
+  return Number(amount).toLocaleString(
+    "en-NZ",
+    {
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    }
+  );
+
+}
+
+
+function displayOrder(){
+
+  const emptyCart =
+    document.getElementById("emptyCart");
+
+  const checkoutContent =
+    document.getElementById("checkoutContent");
+
+  const orderItems =
+    document.getElementById("orderItems");
+
+  const orderTotal =
+    document.getElementById("orderTotal");
+
+  if(!cart || cart.length === 0){
+
+    emptyCart.style.display = "block";
+
+    checkoutContent.style.display = "none";
+
+    return;
+
+  }
+
+  emptyCart.style.display = "none";
+
+  checkoutContent.style.display = "block";
+
+  orderItems.innerHTML = "";
+
+  let total = 0;
+
+  cart.forEach(item => {
+
+    const price = Number(item.price) || 0;
+
+    total += price;
+
+    orderItems.innerHTML += `
+
+      <div class="order-item">
+
+        <div class="product-name">
+          ${item.name}
+        </div>
+
+        <div class="product-price">
+          NZ$ ${money(price)}
+        </div>
+
+      </div>
+
+    `;
+
+  });
+
+  orderTotal.textContent = money(total);
+
+}
+
+
+function payNow(){
+
+  const form =
+    document.getElementById("checkoutForm");
+
+  const button =
+    document.getElementById("payButton");
+
+  const message =
+    document.getElementById("message");
+
+  if(!form.checkValidity()){
+
+    form.reportValidity();
+
+    return;
+
+  }
+
+  if(!cart || cart.length === 0){
+
+    message.className =
+      "message error";
+
+    message.textContent =
+      "Your cart is empty.";
+
+    message.style.display = "block";
+
+    return;
+
+  }
+
+  const customer = {
+
+    name:
+      document.getElementById("name").value.trim(),
+
+    email:
+      document.getElementById("email").value.trim(),
+
+    phone:
+      document.getElementById("phone").value.trim(),
+
+    address:
+      document.getElementById("address").value.trim(),
+
+    products: cart,
+
+    total: cart.reduce(
+      (sum,item) =>
+        sum + Number(item.price || 0),
+      0
+    ),
+
+    currency:"NZD"
+
+  };
+
+  localStorage.setItem(
+    "temuofferCustomer",
+    JSON.stringify(customer)
+  );
+
+  button.disabled = true;
+
+  button.textContent =
+    "Preparing Payment...";
+
+  /*
+    The secure payment connection
+    will be added through server.js.
+
+    Paystack will receive NZD only if
+    your Paystack account supports the
+    required currency/payment setup.
+  */
+
+  setTimeout(() => {
+
+    message.className =
+      "message success";
+
+    message.textContent =
+      "Your order details have been saved. Payment connection will be added next.";
+
+    message.style.display = "block";
+
+    button.disabled = false;
+
+    button.textContent = "Pay Now";
+
+  },500);
+
+}
+
+
+displayOrder();
+
+</script></body>
+</html>
