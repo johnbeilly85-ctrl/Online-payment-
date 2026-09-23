@@ -2,7 +2,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Temuoffer Admin</title><style>
+<title>Temuoffer Admin Dashboard</title><style>
 body{
   font-family:Arial,sans-serif;
   background:#f5f5f5;
@@ -11,7 +11,7 @@ body{
 
 header{
   background:#ff6a00;
-  color:#fff;
+  color:white;
   padding:15px;
   text-align:center;
 }
@@ -20,7 +20,7 @@ header{
 .dashboard{
   max-width:1000px;
   margin:20px auto;
-  background:#fff;
+  background:white;
   padding:20px;
   border-radius:10px;
   box-shadow:0 2px 8px rgba(0,0,0,.08);
@@ -28,40 +28,26 @@ header{
 
 input{
   width:100%;
-  padding:10px;
+  padding:12px;
   margin:8px 0;
   box-sizing:border-box;
+  border:1px solid #ccc;
+  border-radius:6px;
+  font-size:16px;
 }
 
 button{
   background:#ff6a00;
-  color:#fff;
+  color:white;
   border:none;
-  padding:10px 16px;
+  padding:12px 18px;
   border-radius:6px;
   cursor:pointer;
+  font-size:16px;
 }
 
 button:hover{
   opacity:.9;
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:20px;
-}
-
-th,
-td{
-  border:1px solid #ddd;
-  padding:10px;
-  text-align:left;
-}
-
-th{
-  background:#ff6a00;
-  color:#fff;
 }
 
 .hidden{
@@ -75,27 +61,53 @@ th{
   background:#f1f1f1;
 }
 
-@media(max-width:700px){
+.table-container{
+  overflow-x:auto;
+}
 
+table{
+  width:100%;
+  min-width:850px;
+  border-collapse:collapse;
+  margin-top:20px;
+}
+
+th,
+td{
+  border:1px solid #ddd;
+  padding:10px;
+  text-align:left;
+}
+
+th{
+  background:#ff6a00;
+  color:white;
+}
+
+.error{
+  background:#ffe5e5;
+  color:#b00020;
+}
+
+.success{
+  background:#e5ffe9;
+  color:#087f23;
+}
+
+@media(max-width:700px){
   .login,
   .dashboard{
     margin:10px;
     padding:15px;
-    overflow-x:auto;
-  }
-
-  table{
-    min-width:850px;
   }
 }
 </style></head><body><header>
   <h2>Temuoffer Admin Dashboard</h2>
-</header><!-- =========================
-     LOGIN
-========================= --><div class="login" id="loginBox">  <h3>Admin Login</h3><input
+</header><!-- LOGIN --><div class="login" id="loginBox">  <h3>Admin Login</h3><input
 type="text"
 id="username"
 placeholder="Username"
+autocomplete="username"
 
 «»
 
@@ -103,50 +115,63 @@ placeholder="Username"
 type="password"
 id="password"
 placeholder="Password"
+autocomplete="current-password"
 
 «»
 
-  <button onclick="login()">
+  <button type="button" id="loginButton">
     Login
-  </button></div><!-- =========================
-     DASHBOARD
-========================= --><div class="dashboard hidden" id="dashboard">  <h3>Customer Orders</h3>  <button onclick="loadOrders()">
+  </button>  <div class="message hidden" id="loginMessage"></div></div><!-- DASHBOARD --><div class="dashboard hidden" id="dashboard">  <h3>Customer Orders</h3>  <button type="button" id="refreshButton">
     Refresh Orders
   </button>  <div class="message" id="orderCount">
     Loading orders...
-  </div>  <table><thead>
-  <tr>
-    <th>Order ID</th>
-    <th>Name</th>
-    <th>Phone</th>
-    <th>Email</th>
-    <th>Address</th>
-    <th>Product</th>
-    <th>Quantity</th>
-    <th>Total</th>
-    <th>Status</th>
-  </tr>
-</thead>
+  </div>  <div class="table-container"><table>
 
-<tbody id="ordersBody">
+  <thead>
+    <tr>
+      <th>Order ID</th>
+      <th>Name</th>
+      <th>Phone</th>
+      <th>Email</th>
+      <th>Address</th>
+      <th>Product</th>
+      <th>Quantity</th>
+      <th>Total</th>
+      <th>Status</th>
+    </tr>
+  </thead>
 
-  <tr>
-    <td colspan="9">
-      Loading...
-    </td>
-  </tr>
+  <tbody id="ordersBody">
+    <tr>
+      <td colspan="9">Loading...</td>
+    </tr>
+  </tbody>
 
-</tbody>
+</table>
 
-  </table></div><script>
+  </div></div><script>
 
 const ADMIN_USER = "temuoffer";
 const ADMIN_PASS = "Pkirui00";
 
 
-// =========================
-// ADMIN LOGIN
-// =========================
+// ==============================
+// LOGIN
+// ==============================
+
+document.getElementById("loginButton").addEventListener("click", login);
+
+document.getElementById("password").addEventListener("keydown", function(event){
+  if(event.key === "Enter"){
+    login();
+  }
+});
+
+document.getElementById("username").addEventListener("keydown", function(event){
+  if(event.key === "Enter"){
+    login();
+  }
+});
 
 function login(){
 
@@ -156,33 +181,43 @@ function login(){
   const password =
     document.getElementById("password").value;
 
-  if(
-    username === ADMIN_USER &&
-    password === ADMIN_PASS
-  ){
+  const message =
+    document.getElementById("loginMessage");
 
-    document
-      .getElementById("loginBox")
+  if(username === ADMIN_USER && password === ADMIN_PASS){
+
+    document.getElementById("loginBox")
       .classList.add("hidden");
 
-    document
-      .getElementById("dashboard")
+    document.getElementById("dashboard")
       .classList.remove("hidden");
+
+    message.classList.add("hidden");
 
     loadOrders();
 
   }else{
 
-    alert("Invalid login");
+    message.textContent = "Invalid username or password.";
+    message.classList.remove("hidden");
+    message.classList.add("error");
 
   }
 
 }
 
 
-// =========================
+// ==============================
+// REFRESH ORDERS
+// ==============================
+
+document.getElementById("refreshButton")
+  .addEventListener("click", loadOrders);
+
+
+// ==============================
 // LOAD ORDERS
-// =========================
+// ==============================
 
 async function loadOrders(){
 
@@ -200,16 +235,20 @@ async function loadOrders(){
 
   try{
 
-    const res =
-      await fetch("/api/orders");
+    const response =
+      await fetch("/api/orders", {
+        method:"GET",
+        headers:{
+          "Accept":"application/json"
+        }
+      });
 
     const data =
-      await res.json();
+      await response.json();
 
     console.log("Orders received:", data);
 
-
-    if(!res.ok || !data.success){
+    if(!response.ok || !data.success){
 
       body.innerHTML =
         "<tr><td colspan='9'>Failed to load orders</td></tr>";
@@ -220,11 +259,7 @@ async function loadOrders(){
       return;
     }
 
-
-    if(
-      !Array.isArray(data.orders) ||
-      data.orders.length === 0
-    ){
+    if(!Array.isArray(data.orders) || data.orders.length === 0){
 
       body.innerHTML =
         "<tr><td colspan='9'>No orders found</td></tr>";
@@ -235,79 +270,67 @@ async function loadOrders(){
       return;
     }
 
-
     count.textContent =
       "Total orders: " + data.orders.length;
 
-
     body.innerHTML =
-      data.orders.map(o => {
+      data.orders.map(function(order){
 
         const orderId =
-          o.orderId || "N/A";
+          order.orderId || order._id || "N/A";
 
         const name =
-          o.fullName ||
-          o.name ||
+          order.fullName ||
+          order.name ||
           "N/A";
 
         const phone =
-          o.phone ||
+          order.phone ||
           "N/A";
 
         const email =
-          o.email ||
+          order.email ||
           "N/A";
 
         const address =
-          o.deliveryAddress ||
-          o.address ||
+          order.deliveryAddress ||
+          order.address ||
           "N/A";
 
         const product =
-          o.productName ||
+          order.productName ||
+          order.product ||
           "Product";
 
         const quantity =
-          o.quantity ||
-          1;
+          order.quantity || 1;
 
         const currency =
-          o.currency ||
-          "NZD";
+          order.currency || "NZD";
 
         const total =
-          Number(o.total || 0).toFixed(2);
+          Number(
+            order.total ||
+            order.amount ||
+            0
+          ).toFixed(2);
 
         const status =
-          o.status ||
+          order.status ||
           "Pending Payment";
 
-
         return `
-
           <tr>
-
             <td>${escapeHtml(orderId)}</td>
-
             <td>${escapeHtml(name)}</td>
-
             <td>${escapeHtml(phone)}</td>
-
             <td>${escapeHtml(email)}</td>
-
             <td>${escapeHtml(address)}</td>
-
             <td>${escapeHtml(product)}</td>
-
-            <td>${quantity}</td>
-
-            <td>${escapeHtml(currency)} ${total}</td>
-
+            <td>${escapeHtml(quantity)}</td>
+            <td>${escapeHtml(currency)} ${escapeHtml(total)}</td>
             <td>${escapeHtml(status)}</td>
-
           </tr>
-
         `;
 
       }).join("");
@@ -330,18 +353,18 @@ async function loadOrders(){
 }
 
 
-// =========================
-// SECURITY: ESCAPE HTML
-// =========================
+// ==============================
+// ESCAPE HTML
+// ==============================
 
 function escapeHtml(value){
 
   return String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
 
 }
 
