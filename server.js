@@ -315,7 +315,8 @@ app.post("/api/products", async (req, res) => {
       offerPrice,
       image,
       stock,
-      onOffer
+      onOffer,
+      description
     } = req.body;
 
     if (!name || !category || offerPrice === undefined) {
@@ -341,6 +342,8 @@ app.post("/api/products", async (req, res) => {
       name: String(name).trim(),
 
       category: String(category).trim(),
+
+      description: String(description || "").trim(),
 
       originalPrice: original,
 
@@ -414,7 +417,8 @@ app.put("/api/products/:productId", async (req, res) => {
       offerPrice,
       image,
       stock,
-      onOffer
+      onOffer,
+      description
     } = req.body;
 
     if (!name || !category || offerPrice === undefined) {
@@ -446,6 +450,8 @@ app.put("/api/products/:productId", async (req, res) => {
       name: String(name).trim(),
 
       category: String(category).trim(),
+
+      description: String(description || "").trim(),
 
       originalPrice: original,
 
