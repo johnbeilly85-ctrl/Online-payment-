@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Payment</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      color: #222;
+    }
+
+    .container {
+      max-width: 430px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      padding: 28px 22px;
+      border-radius: 16px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin: 15px 0 7px;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 24px;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      background: #00a859;
+      color: white;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .message {
+      display: none;
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .error {
+      background: #ffe5e5;
+      color: #b00020;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="card">
+
+      <h1>Online Payment</h1>
+
+      <p class="subtitle">
+        Make a secure payment online
+      </p>
+
+      <form id="paymentForm">
+
+        <label for="name">Full Name</label>
+        <input
+          type="text"
+          id="name"
+          placeholder="Enter your full name"
+          required
+        >
+
+        <label for="email">Email Address</label>
+        <input
+          type="email"
+          id="email"
+          placeholder="Enter your email"
+          required
+        >
+
+        <label for="amount">Amount (KES)</label>
+        <input
+          type="number"
+          id="amount"
+          placeholder="Enter amount"
+          min="1"
+          required
+        >
+
+        <button type="submit" id="payButton">
+          Pay Now
+        </button>
+
+      </form>
+
+      <div id="message" class="message error"></div>
+
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById("paymentForm");
+    const button = document.getElementById("payButton");
+    const message = document.getElementById("message");
+
+    form.addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      message.style.display = "none";
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const amount = Number(document.getElementById("amount").value);
+
+      if (!name || !email || !amount || amount <= 0) {
+        message.textContent = "Please enter valid payment details.";
+        message.style.display = "block";
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Opening Payment...";
+
+      try {
+        const response = await fetch("/api/pay", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            name: name,
+            email: email,
+            amount: amount
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.authorization_url) {
+          window.location.href = data.authorization_url;
+          return;
+        }
+
+        throw new Error(data.message || "Unable to start payment.");
+
+      } catch (error) {
+        message.textContent = error.message;
+        message.style.display = "block";
+
+        button.disabled = false;
+        button.textContent = "Pay Now";
+      }
+    });
+  </script>
+
+</body>
+</html>
