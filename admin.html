@@ -45,6 +45,10 @@ button {
   font-size: 16px;
 }
 
+button:hover {
+  background: #e55d00;
+}
+
 .hidden {
   display: none;
 }
@@ -59,6 +63,11 @@ button {
 .error {
   background: #ffe5e5;
   color: #b00020;
+}
+
+.success {
+  background: #e5ffe9;
+  color: #08752b;
 }
 
 .table-container {
@@ -91,7 +100,7 @@ th {
 }
 </style></head><body><header>
   <h2>Temuoffer Admin Dashboard</h2>
-</header><div class="login" id="loginBox">  <h3>Admin Login</h3><input
+</header><!-- ADMIN LOGIN --><div class="login" id="loginBox">  <h3>Admin Login</h3><input
 type="text"
 id="username"
 placeholder="Username"
@@ -109,7 +118,7 @@ autocomplete="current-password"
 
   <button type="button" onclick="login()">
     Login
-  </button>  <div id="loginMessage" class="message hidden"></div></div><div class="dashboard hidden" id="dashboard">  <h3>Customer Orders</h3>  <button type="button" onclick="loadOrders()">
+  </button>  <div id="loginMessage" class="message hidden"></div></div><!-- ADMIN DASHBOARD --><div class="dashboard hidden" id="dashboard">  <h3>Customer Orders</h3>  <button type="button" onclick="loadOrders()">
     Refresh Orders
   </button>  <div id="orderCount" class="message">
     Loading orders...
@@ -130,9 +139,11 @@ autocomplete="current-password"
   </thead>
 
   <tbody id="ordersBody">
+
     <tr>
       <td colspan="9">Loading...</td>
     </tr>
+
   </tbody>
 
 </table>
@@ -142,6 +153,8 @@ autocomplete="current-password"
 const ADMIN_USER = "temuoffer";
 const ADMIN_PASS = "Pkirui00";
 
+
+/* LOGIN */
 function login() {
 
   const username =
@@ -153,7 +166,11 @@ function login() {
   const message =
     document.getElementById("loginMessage");
 
-  if (username === ADMIN_USER && password === ADMIN_PASS) {
+
+  if (
+    username === ADMIN_USER &&
+    password === ADMIN_PASS
+  ) {
 
     document
       .getElementById("loginBox")
@@ -163,6 +180,8 @@ function login() {
       .getElementById("dashboard")
       .classList.remove("hidden");
 
+    message.classList.add("hidden");
+
     loadOrders();
 
   } else {
@@ -171,11 +190,15 @@ function login() {
       "Invalid username or password.";
 
     message.classList.remove("hidden");
+
     message.classList.add("error");
 
   }
+
 }
 
+
+/* PRESS ENTER TO LOGIN */
 document
   .getElementById("password")
   .addEventListener("keydown", function(event) {
@@ -186,6 +209,8 @@ document
 
   });
 
+
+/* LOAD ORDERS */
 async function loadOrders() {
 
   const body =
@@ -194,19 +219,23 @@ async function loadOrders() {
   const count =
     document.getElementById("orderCount");
 
+
   body.innerHTML =
     "<tr><td colspan='9'>Loading...</td></tr>";
 
   count.textContent =
     "Loading orders...";
 
+
   try {
 
     const response =
       await fetch("/api/orders");
 
+
     const data =
       await response.json();
+
 
     if (!response.ok || !data.success) {
 
@@ -214,13 +243,18 @@ async function loadOrders() {
         "<tr><td colspan='9'>Failed to load orders</td></tr>";
 
       count.textContent =
-        data.message || "Failed to load orders.";
+        data.message ||
+        "Failed to load orders.";
 
       return;
+
     }
 
-    if (!Array.isArray(data.orders) ||
-        data.orders.length === 0) {
+
+    if (
+      !Array.isArray(data.orders) ||
+      data.orders.length === 0
+    ) {
 
       body.innerHTML =
         "<tr><td colspan='9'>No orders found</td></tr>";
@@ -229,43 +263,61 @@ async function loadOrders() {
         "No orders found.";
 
       return;
+
     }
+
 
     count.textContent =
       "Total orders: " + data.orders.length;
 
+
     body.innerHTML =
       data.orders.map(function(order) {
 
+
         const orderId =
-          order.orderId || order._id || "N/A";
+          order.orderId ||
+          order._id ||
+          "N/A";
+
 
         const name =
           order.fullName ||
           order.name ||
           "N/A";
 
+
         const phone =
-          order.phone || "N/A";
+          order.phone ||
+          "N/A";
+
 
         const email =
-          order.email || "N/A";
+          order.email ||
+          "N/A";
+
 
         const address =
           order.deliveryAddress ||
           order.address ||
           "N/A";
 
+
         const product =
           order.productName ||
           order.product ||
           "Product";
 
+
         const quantity =
-          order.quantity || 1;
+          order.quantity ||
+          1;
+
 
         const currency =
-          order.currency || "NZD";
+          order.currency ||
+          "NZD";
+
 
         const total =
           Number(
@@ -274,44 +326,93 @@ async function loadOrders() {
             0
           ).toFixed(2);
 
+
         const status =
           order.status ||
           "Pending Payment";
 
+
         return `
+
           <tr>
-            <td>${escapeHtml(orderId)}</td>
-            <td>${escapeHtml(name)}</td>
-            <td>${escapeHtml(phone)}</td>
-            <td>${escapeHtml(email)}</td>
-            <td>${escapeHtml(address)}</td>
-            <td>${escapeHtml(product)}</td>
-            <td>${escapeHtml(quantity)}</td>
-            <td>${escapeHtml(currency)} ${escapeHtml(total)}</td>
-            <td>${escapeHtml(status)}</td>
+
+            <td>
+              ${escapeHtml(orderId)}
+            </td>
+
+            <td>
+              ${escapeHtml(name)}
+            </td>
+
+            <td>
+              ${escapeHtml(phone)}
+            </td>
+
+            <td>
+              ${escapeHtml(email)}
+            </td>
+
+            <td>
+              ${escapeHtml(address)}
+            </td>
+
+            <td>
+              ${escapeHtml(product)}
+            </td>
+
+            <td>
+              ${escapeHtml(quantity)}
+            </td>
+
+            <td>
+              ${escapeHtml(currency)}
+              ${escapeHtml(total)}
+            </td>
+
+            <td>
+              ${escapeHtml(status)}
+            </td>
+
           </tr>
+
         `;
 
       }).join("");
 
+
   } catch (error) {
 
-    console.error(error);
+    console.error("Order loading error:", error);
+
 
     body.innerHTML =
       "<tr><td colspan='9'>Server error</td></tr>";
+
 
     count.textContent =
       "Unable to connect to server.";
 
   }
+
 }
 
+
+/* PREVENT HTML INJECTION */
 function escapeHtml(value) {
 
   return String(value)
+
     .replace(/&/g, "&amp;")
+
     .replace(/</g, "&lt;")
+
     .replace(/>/g, "&gt;")
+
     .replace(/"/g, "&quot;")
+
     .replace(/'/g, "&#039;");
+
+}
+
+</script></body>
+</html>
