@@ -1,0 +1,273 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Temuoffer Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f6f8;
+      color: #222;
+    }.header {
+  background: #111827;
+  color: white;
+  padding: 18px;
+  text-align: center;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 25px auto;
+  padding: 15px;
+}
+
+.card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  margin-bottom: 20px;
+}
+
+input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 13px;
+  margin: 8px 0 15px;
+  border: 1px solid #ccc;
+  border-radius: 7px;
+  font-size: 16px;
+}
+
+button {
+  background: #111827;
+  color: white;
+  border: none;
+  padding: 13px 20px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+.logout {
+  float: right;
+  background: #dc2626;
+  padding: 9px 14px;
+  font-size: 14px;
+}
+
+.error {
+  color: #dc2626;
+  margin-bottom: 10px;
+}
+
+.success {
+  color: #15803d;
+  margin-bottom: 10px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  min-width: 900px;
+}
+
+th, td {
+  border-bottom: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+}
+
+th {
+  background: #f3f4f6;
+}
+
+.hidden {
+  display: none;
+}
+
+.empty {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+}
+
+@media (max-width: 600px) {
+  .container {
+    margin: 10px auto;
+    padding: 10px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+}
+
+  </style>
+</head><body>  <div class="header">
+    <h1>Temuoffer Admin</h1>
+  </div>  <!-- LOGIN -->  <div id="loginSection" class="container">
+    <div class="card">
+      <h2>Admin Login</h2>  <div id="loginError" class="error"></div>
+
+  <label>Username</label>
+  <input type="text" id="username" placeholder="Enter username">
+
+  <label>Password</label>
+  <input type="password" id="password" placeholder="Enter password">
+
+  <button onclick="login()">Login</button>
+</div>
+
+  </div>  <!-- DASHBOARD -->  <div id="dashboardSection" class="hidden"><div class="header">
+  <span>Temuoffer Orders Dashboard</span>
+  <button class="logout" onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <h2>Orders</h2>
+
+    <div id="message"></div>
+
+    <button onclick="loadOrders()">Refresh Orders</button>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Address</th>
+            <th>Product</th>
+            <th>Qty</th>
+            <th>Total</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+
+        <tbody id="ordersBody">
+          <tr>
+            <td colspan="9" class="empty">Loading orders...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+
+  </div><script>
+  const ADMIN_USERNAME = "temuoffer";
+  const ADMIN_PASSWORD = "Pkirui00";
+
+  function login() {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value;
+
+    const error = document.getElementById("loginError");
+    error.textContent = "";
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      sessionStorage.setItem("temuofferAdmin", "true");
+
+      document.getElementById("loginSection").classList.add("hidden");
+      document.getElementById("dashboardSection").classList.remove("hidden");
+
+      loadOrders();
+    } else {
+      error.textContent = "Invalid username or password.";
+    }
+  }
+
+  function logout() {
+    sessionStorage.removeItem("temuofferAdmin");
+
+    document.getElementById("dashboardSection").classList.add("hidden");
+    document.getElementById("loginSection").classList.remove("hidden");
+
+    document.getElementById("username").value = "";
+    document.getElementById("password").value = "";
+  }
+
+  async function loadOrders() {
+    const body = document.getElementById("ordersBody");
+    const message = document.getElementById("message");
+
+    body.innerHTML = '<tr><td colspan="9" class="empty">Loading...</td></tr>';
+    message.textContent = "";
+
+    try {
+      const response = await fetch("/api/orders");
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Could not load orders.");
+      }
+
+      if (!data.orders || data.orders.length === 0) {
+        body.innerHTML =
+          '<tr><td colspan="9" class="empty">No orders found.</td></tr>';
+        return;
+      }
+
+      body.innerHTML = "";
+
+      data.orders.forEach(order => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+          <td>${escapeHtml(order.orderId || "")}</td>
+          <td>${escapeHtml(order.fullName || "")}</td>
+          <td>${escapeHtml(order.email || "")}</td>
+          <td>${escapeHtml(order.phone || "")}</td>
+          <td>${escapeHtml(order.deliveryAddress || "")}</td>
+          <td>${escapeHtml(order.productName || "")}</td>
+          <td>${escapeHtml(String(order.quantity || 1))}</td>
+          <td>$${Number(order.total || 0).toFixed(2)}</td>
+          <td>${order.createdAt ? new Date(order.createdAt).toLocaleString() : ""}</td>
+        `;
+
+        body.appendChild(row);
+      });
+
+    } catch (error) {
+      console.error(error);
+      body.innerHTML =
+        '<tr><td colspan="9" class="empty">Unable to load orders.</td></tr>';
+      message.className = "error";
+      message.textContent = error.message;
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  if (sessionStorage.getItem("temuofferAdmin") === "true") {
+    document.getElementById("loginSection").classList.add("hidden");
+    document.getElementById("dashboardSection").classList.remove("hidden");
+    loadOrders();
+  }
+</script></body>
+</html>
