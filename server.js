@@ -5,34 +5,21 @@ const { MongoClient } = require("mongodb");
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// ===============================
-// MONGODB CONFIGURATION
-// ===============================
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = "Temuoffer";
 
 let db;
 let ordersCollection;
 
-// ===============================
-// MIDDLEWARE
-// ===============================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve website files
 app.use(express.static(__dirname));
 
-// ===============================
-// HOME PAGE
-// ===============================
 app.get("/", (req, res) => {
 res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// ===============================
-// HEALTH CHECK
-// ===============================
 app.get("/api/health", (req, res) => {
 res.json({
 success: true,
@@ -42,9 +29,10 @@ database: db ? "connected" : "not connected"
 });
 });
 
-// ===============================
-// SUBMIT ORDER
-// ===============================
+/* ===============================
+SUBMIT ORDER
+================================ */
+
 app.post("/api/order", async (req, res) => {
 try {
 const {
@@ -59,13 +47,12 @@ total,
 currency
 } = req.body;
 
-// Accept either name format
-const customerName = String(fullName || name || "").trim();
-const customerAddress = String(
-  deliveryAddress || address || ""
-).trim();
+const customerName =
+  String(fullName || name || "").trim();
 
-// Validate required information
+const customerAddress =
+  String(deliveryAddress || address || "").trim();
+
 if (
   !customerName ||
   !email ||
@@ -81,7 +68,6 @@ if (
   });
 }
 
-// Check database connection
 if (!db || !ordersCollection) {
   return res.status(503).json({
     success: false,
@@ -89,12 +75,9 @@ if (!db || !ordersCollection) {
   });
 }
 
-// Create order
 const order = {
   orderId: "TO-" + Date.now(),
 
-  // Save both formats so the admin dashboard
-  // always has the correct customer information
   name: customerName,
   fullName: customerName,
 
@@ -104,7 +87,9 @@ const order = {
   address: customerAddress,
   deliveryAddress: customerAddress,
 
-  products: Array.isArray(products) ? products : [],
+  products: Array.isArray(products)
+    ? products
+    : [],
 
   total: Number(total),
 
@@ -115,7 +100,6 @@ const order = {
   createdAt: new Date()
 };
 
-// Save to MongoDB
 await ordersCollection.insertOne(order);
 
 console.log("=================================");
@@ -136,6 +120,7 @@ return res.status(201).json({
 });
 
 } catch (error) {
+
 console.error("Order Error:", error);
 
 return res.status(500).json({
@@ -146,17 +131,18 @@ return res.status(500).json({
 }
 });
 
-// ===============================
-// GET ALL ORDERS
-// ADMIN DASHBOARD
-// ===============================
+/* ===============================
+GET ALL ORDERS
+================================ */
+
 app.get("/api/orders", async (req, res) => {
 try {
+
 if (!db || !ordersCollection) {
-return res.status(503).json({
-success: false,
-message: "Database is not connected."
-});
+  return res.status(503).json({
+    success: false,
+    message: "Database is not connected."
+  });
 }
 
 const orders = await ordersCollection
@@ -238,6 +224,7 @@ return res.json({
 });
 
 } catch (error) {
+
 console.error("Get Orders Error:", error);
 
 return res.status(500).json({
@@ -248,9 +235,94 @@ return res.status(500).json({
 }
 });
 
-// ===============================
-// API 404
-// ===============================
+/* ===============================
+UPDATE ORDER STATUS
+================================ */
+
+app.put("/api/orders/:orderId/status", async (req, res) => {
+try {
+
+if (!db || !ordersCollection) {
+  return res.status(503).json({
+    success: false,
+    message: "Database is not connected."
+  });
+}
+
+const orderId =
+  String(req.params.orderId || "").trim();
+
+const status =
+  String(req.body.status || "").trim();
+
+const allowedStatuses = [
+  "Pending Payment",
+  "Payment Received",
+  "Processing",
+  "Shipped",
+  "Delivered",
+  "Cancelled"
+];
+
+if (!orderId || !status) {
+  return res.status(400).json({
+    success: false,
+    message: "Order ID and status are required."
+  });
+}
+
+if (!allowedStatuses.includes(status)) {
+  return res.status(400).json({
+    success: false,
+    message: "Invalid order status."
+  });
+}
+
+const result =
+  await ordersCollection.updateOne(
+    { orderId: orderId },
+    {
+      $set: {
+        status: status,
+        updatedAt: new Date()
+      }
+    }
+  );
+
+if (result.matchedCount === 0) {
+  return res.status(404).json({
+    success: false,
+    message: "Order not found."
+  });
+}
+
+console.log(
+  `Order ${orderId} status changed to ${status}`
+);
+
+return res.json({
+  success: true,
+  message: "Order status updated successfully.",
+  orderId: orderId,
+  status: status
+});
+
+} catch (error) {
+
+console.error("Update Status Error:", error);
+
+return res.status(500).json({
+  success: false,
+  message: "Unable to update order status."
+});
+
+}
+});
+
+/* ===============================
+API 404
+================================ */
+
 app.use("/api", (req, res) => {
 res.status(404).json({
 success: false,
@@ -258,10 +330,12 @@ message: "API endpoint not found."
 });
 });
 
-// ===============================
-// START SERVER
-// ===============================
+/* ===============================
+START SERVER
+================================ */
+
 async function startServer() {
+
 try {
 
 if (!MONGODB_URI) {
@@ -274,6 +348,7 @@ if (!MONGODB_URI) {
     console.log(
       `Temuoffer server running on port ${PORT}`
     );
+
     console.log(
       "WARNING: Server started without MongoDB."
     );
@@ -282,11 +357,13 @@ if (!MONGODB_URI) {
   return;
 }
 
-const client = new MongoClient(MONGODB_URI);
+const client =
+  new MongoClient(MONGODB_URI);
 
 await client.connect();
 
-db = client.db(DB_NAME);
+db =
+  client.db(DB_NAME);
 
 ordersCollection =
   db.collection("orders");
@@ -304,9 +381,11 @@ console.log(
 );
 
 app.listen(PORT, () => {
+
   console.log(
     `Temuoffer server running on port ${PORT}`
   );
+
 });
 
 } catch (error) {
@@ -317,6 +396,7 @@ console.error(
 );
 
 app.listen(PORT, () => {
+
   console.log(
     `Temuoffer server running on port ${PORT}`
   );
@@ -324,6 +404,7 @@ app.listen(PORT, () => {
   console.log(
     "WARNING: Server started without MongoDB connection."
   );
+
 });
 
 }
