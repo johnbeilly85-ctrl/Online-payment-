@@ -1,105 +1,349 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Temuoffer Admin</title>
-<style>
-body{font-family:Arial,sans-serif;background:#f5f5f5;margin:0}
-header{background:#ff6a00;color:#fff;padding:15px;text-align:center}
-.login,.dashboard{max-width:1000px;margin:20px auto;background:#fff;padding:20px;border-radius:10px}
-input{width:100%;padding:10px;margin:8px 0}
-button{background:#ff6a00;color:#fff;border:none;padding:10px 16px;border-radius:6px;cursor:pointer}
-table{width:100%;border-collapse:collapse;margin-top:20px}
-th,td{border:1px solid #ddd;padding:10px;text-align:left}
-th{background:#ff6a00;color:#fff}
-.hidden{display:none}
-</style>
-</head>
-<body>
+<title>Temuoffer Admin</title><style>
+body{
+  font-family:Arial,sans-serif;
+  background:#f5f5f5;
+  margin:0;
+}
 
-<header><h2>Temuoffer Admin Dashboard</h2></header>
+header{
+  background:#ff6a00;
+  color:#fff;
+  padding:15px;
+  text-align:center;
+}
 
-<div class="login" id="loginBox">
-  <h3>Admin Login</h3>
-  <input type="text" id="username" placeholder="Username">
-  <input type="password" id="password" placeholder="Password">
-  <button onclick="login()">Login</button>
-</div>
+.login,
+.dashboard{
+  max-width:1000px;
+  margin:20px auto;
+  background:#fff;
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
 
-<div class="dashboard hidden" id="dashboard">
-  <h3>Customer Orders</h3>
-  <button onclick="loadOrders()">Refresh</button>
+input{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  box-sizing:border-box;
+}
 
-  <table>
-    <thead>
-      <tr>
-        <th>Order ID</th>
-        <th>Name</th>
-        <th>Phone</th>
-        <th>Email</th>
-        <th>Address</th>
-        <th>Total</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody id="ordersBody">
-      <tr><td colspan="7">Loading...</td></tr>
-    </tbody>
-  </table>
-</div>
+button{
+  background:#ff6a00;
+  color:#fff;
+  border:none;
+  padding:10px 16px;
+  border-radius:6px;
+  cursor:pointer;
+}
 
-<script>
-const ADMIN_USER="temuoffer";
-const ADMIN_PASS="Pkirui00";
+button:hover{
+  opacity:.9;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:20px;
+}
+
+th,
+td{
+  border:1px solid #ddd;
+  padding:10px;
+  text-align:left;
+}
+
+th{
+  background:#ff6a00;
+  color:#fff;
+}
+
+.hidden{
+  display:none;
+}
+
+.message{
+  margin-top:15px;
+  padding:10px;
+  border-radius:6px;
+  background:#f1f1f1;
+}
+
+@media(max-width:700px){
+
+  .login,
+  .dashboard{
+    margin:10px;
+    padding:15px;
+    overflow-x:auto;
+  }
+
+  table{
+    min-width:850px;
+  }
+}
+</style></head><body><header>
+  <h2>Temuoffer Admin Dashboard</h2>
+</header><!-- =========================
+     LOGIN
+========================= --><div class="login" id="loginBox">  <h3>Admin Login</h3><input
+type="text"
+id="username"
+placeholder="Username"
+
+«»
+
+<input
+type="password"
+id="password"
+placeholder="Password"
+
+«»
+
+  <button onclick="login()">
+    Login
+  </button></div><!-- =========================
+     DASHBOARD
+========================= --><div class="dashboard hidden" id="dashboard">  <h3>Customer Orders</h3>  <button onclick="loadOrders()">
+    Refresh Orders
+  </button>  <div class="message" id="orderCount">
+    Loading orders...
+  </div>  <table><thead>
+  <tr>
+    <th>Order ID</th>
+    <th>Name</th>
+    <th>Phone</th>
+    <th>Email</th>
+    <th>Address</th>
+    <th>Product</th>
+    <th>Quantity</th>
+    <th>Total</th>
+    <th>Status</th>
+  </tr>
+</thead>
+
+<tbody id="ordersBody">
+
+  <tr>
+    <td colspan="9">
+      Loading...
+    </td>
+  </tr>
+
+</tbody>
+
+  </table></div><script>
+
+const ADMIN_USER = "temuoffer";
+const ADMIN_PASS = "Pkirui00";
+
+
+// =========================
+// ADMIN LOGIN
+// =========================
 
 function login(){
+
+  const username =
+    document.getElementById("username").value.trim();
+
+  const password =
+    document.getElementById("password").value;
+
   if(
-    document.getElementById("username").value===ADMIN_USER &&
-    document.getElementById("password").value===ADMIN_PASS
+    username === ADMIN_USER &&
+    password === ADMIN_PASS
   ){
-    document.getElementById("loginBox").classList.add("hidden");
-    document.getElementById("dashboard").classList.remove("hidden");
+
+    document
+      .getElementById("loginBox")
+      .classList.add("hidden");
+
+    document
+      .getElementById("dashboard")
+      .classList.remove("hidden");
+
     loadOrders();
+
   }else{
+
     alert("Invalid login");
+
   }
+
 }
+
+
+// =========================
+// LOAD ORDERS
+// =========================
 
 async function loadOrders(){
-  const body=document.getElementById("ordersBody");
-  body.innerHTML="<tr><td colspan='7'>Loading...</td></tr>";
+
+  const body =
+    document.getElementById("ordersBody");
+
+  const count =
+    document.getElementById("orderCount");
+
+  body.innerHTML =
+    "<tr><td colspan='9'>Loading...</td></tr>";
+
+  count.textContent =
+    "Loading orders...";
 
   try{
-    const res=await fetch("/api/orders");
-    const data=await res.json();
 
-    if(!data.success){
-      body.innerHTML="<tr><td colspan='7'>Failed to load orders</td></tr>";
+    const res =
+      await fetch("/api/orders");
+
+    const data =
+      await res.json();
+
+    console.log("Orders received:", data);
+
+
+    if(!res.ok || !data.success){
+
+      body.innerHTML =
+        "<tr><td colspan='9'>Failed to load orders</td></tr>";
+
+      count.textContent =
+        data.message || "Failed to load orders.";
+
       return;
     }
 
-    if(data.orders.length===0){
-      body.innerHTML="<tr><td colspan='7'>No orders found</td></tr>";
+
+    if(
+      !Array.isArray(data.orders) ||
+      data.orders.length === 0
+    ){
+
+      body.innerHTML =
+        "<tr><td colspan='9'>No orders found</td></tr>";
+
+      count.textContent =
+        "No orders found.";
+
       return;
     }
 
-    body.innerHTML=data.orders.map(o=>`
-      <tr>
-        <td>${o.orderId}</td>
-        <td>${o.name}</td>
-        <td>${o.phone}</td>
-        <td>${o.email}</td>
-        <td>${o.address}</td>
-        <td>${o.currency} ${o.total}</td>
-        <td>${o.status}</td>
-      </tr>
-    `).join("");
-  }catch(e){
-    body.innerHTML="<tr><td colspan='7'>Server error</td></tr>";
+
+    count.textContent =
+      "Total orders: " + data.orders.length;
+
+
+    body.innerHTML =
+      data.orders.map(o => {
+
+        const orderId =
+          o.orderId || "N/A";
+
+        const name =
+          o.fullName ||
+          o.name ||
+          "N/A";
+
+        const phone =
+          o.phone ||
+          "N/A";
+
+        const email =
+          o.email ||
+          "N/A";
+
+        const address =
+          o.deliveryAddress ||
+          o.address ||
+          "N/A";
+
+        const product =
+          o.productName ||
+          "Product";
+
+        const quantity =
+          o.quantity ||
+          1;
+
+        const currency =
+          o.currency ||
+          "NZD";
+
+        const total =
+          Number(o.total || 0).toFixed(2);
+
+        const status =
+          o.status ||
+          "Pending Payment";
+
+
+        return `
+
+          <tr>
+
+            <td>${escapeHtml(orderId)}</td>
+
+            <td>${escapeHtml(name)}</td>
+
+            <td>${escapeHtml(phone)}</td>
+
+            <td>${escapeHtml(email)}</td>
+
+            <td>${escapeHtml(address)}</td>
+
+            <td>${escapeHtml(product)}</td>
+
+            <td>${quantity}</td>
+
+            <td>${escapeHtml(currency)} ${total}</td>
+
+            <td>${escapeHtml(status)}</td>
+
+          </tr>
+
+        `;
+
+      }).join("");
+
+  }catch(error){
+
+    console.error(
+      "Admin order loading error:",
+      error
+    );
+
+    body.innerHTML =
+      "<tr><td colspan='9'>Server error</td></tr>";
+
+    count.textContent =
+      "Unable to connect to server.";
+
   }
-}
-</script>
 
-</body>
+}
+
+
+// =========================
+// SECURITY: ESCAPE HTML
+// =========================
+
+function escapeHtml(value){
+
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+}
+
+</script></body>
 </html>
