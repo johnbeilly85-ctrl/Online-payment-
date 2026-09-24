@@ -1,6 +1,8 @@
 const express = require("express");
 const path = require("path");
-const { MongoClient } = require("mongodb");
+const fs = require("fs");
+const { MongoClient, ObjectId } = require("mongodb");
+const multer = require("multer");
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -8,282 +10,208 @@ const PORT = process.env.PORT || 10000;
 const MONGODB_URI = process.env.MONGODB_URI;
 const DB_NAME = "Temuoffer";
 
+// ======================================
+// DIRECTORIES
+// ======================================
+
+const uploadsDir = path.join(__dirname, "uploads");
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// ======================================
+// MULTER IMAGE UPLOAD SETTINGS
+// ======================================
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, uploadsDir);
+  },
+
+  filename: function (req, file, cb) {
+    const extension = path.extname(file.originalname).toLowerCase();
+
+    const safeName =
+      Date.now() +
+      "-" +
+      Math.random().toString(36).substring(2, 10) +
+      extension;
+
+    cb(null, safeName);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+
+  limits: {
+    fileSize: 10 * 1024 * 1024
+  },
+
+  fileFilter: function (req, file, cb) {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/gif"
+    ];
+
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(
+        new Error(
+          "Only JPG, JPEG, PNG, WEBP and GIF images are allowed."
+        )
+      );
+    }
+  }
+});
+
+// ======================================
+// DATABASE
+// ======================================
+
 let db;
 let ordersCollection;
 let productsCollection;
 
-// ===============================
+// ======================================
 // MIDDLEWARE
-// ===============================
-app.use(express.json());
+// ======================================
+
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+// Website files
 app.use(express.static(__dirname));
 
-// ===============================
+// Uploaded product images
+app.use("/uploads", express.static(uploadsDir));
+
+// ======================================
 // HOME PAGE
-// ===============================
+// ======================================
+
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// ===============================
+// ======================================
+// MONGODB CONNECTION
+// ======================================
+
+async function connectDatabase() {
+  if (!MONGODB_URI) {
+    console.error("MONGODB_URI is missing from Render Environment Variables.");
+    return;
+  }
+
+  try {
+    const client = new MongoClient(MONGODB_URI);
+
+    await client.connect();
+
+    db = client.db(DB_NAME);
+
+    ordersCollection = db.collection("orders");
+    productsCollection = db.collection("products");
+
+    console.log("MongoDB connected successfully.");
+    console.log("Database:", DB_NAME);
+
+  } catch (error) {
+    console.error("MongoDB Connection Error:");
+    console.error(error.message);
+  }
+}
+
+// ======================================
 // HEALTH CHECK
-// ===============================
-app.get("/api/health", (req, res) => {
-  res.json({
-    success: true,
-    server: "running",
-    database: db ? "connected" : "not connected"
-  });
-});
+// ======================================
 
-// ===============================
-// CREATE ORDER
-// ===============================
-app.post("/api/order", async (req, res) => {
+app.get("/api/health", async (req, res) => {
   try {
-    if (!ordersCollection) {
-      return res.status(500).json({
+    if (!db) {
+      return res.status(503).json({
         success: false,
-        message: "Database is not connected."
+        message: "MongoDB is not connected."
       });
     }
 
-    const {
-      name,
-      fullName,
-      email,
-      phone,
-      address,
-      deliveryAddress,
-      products,
-      total,
-      currency
-    } = req.body;
-
-    const customerName = fullName || name;
-    const customerAddress = deliveryAddress || address;
-
-    if (!customerName || !email || !phone || !customerAddress) {
-      return res.status(400).json({
-        success: false,
-        message: "Name, email, phone and delivery address are required."
-      });
-    }
-
-    const order = {
-      orderId: "TO-" + Date.now(),
-
-      name: customerName,
-      fullName: customerName,
-
-      email,
-      phone,
-
-      address: customerAddress,
-      deliveryAddress: customerAddress,
-
-      products: Array.isArray(products) ? products : [],
-
-      total: Number(total) || 0,
-      currency: String(currency || "NZD"),
-
-      status: "Pending Payment",
-
-      createdAt: new Date()
-    };
-
-    await ordersCollection.insertOne(order);
+    await db.command({ ping: 1 });
 
     res.json({
       success: true,
-      message: "Order received successfully.",
-      orderId: order.orderId
+      message: "Temuoffer server and MongoDB are working.",
+      database: DB_NAME
     });
 
   } catch (error) {
-    console.error("Create order error:", error);
-
     res.status(500).json({
       success: false,
-      message: "Failed to create order."
+      message: error.message
     });
   }
 });
 
-// ===============================
-// GET ALL ORDERS
-// ===============================
-app.get("/api/orders", async (req, res) => {
+// ======================================
+// UPLOAD IMAGE FROM GALLERY
+// ======================================
+
+app.post("/api/upload-image", upload.single("image"), (req, res) => {
   try {
-    if (!ordersCollection) {
-      return res.status(500).json({
+    if (!req.file) {
+      return res.status(400).json({
         success: false,
-        message: "Database is not connected."
+        message: "No image was uploaded."
       });
     }
 
-    const orders = await ordersCollection
-      .find({})
-      .sort({ createdAt: -1 })
-      .toArray();
-
-    const formattedOrders = orders.map(order => {
-      let productName = "";
-      let quantity = 1;
-
-      if (Array.isArray(order.products) && order.products.length > 0) {
-        productName = order.products
-          .map(product => product.name || product.productName || "Product")
-          .join(", ");
-
-        quantity = order.products.reduce(
-          (sum, product) => sum + (Number(product.quantity) || 1),
-          0
-        );
-      }
-
-      return {
-        orderId: order.orderId,
-
-        fullName: order.fullName || order.name || "",
-
-        email: order.email || "",
-
-        phone: order.phone || "",
-
-        deliveryAddress:
-          order.deliveryAddress || order.address || "",
-
-        productName,
-
-        quantity,
-
-        products: order.products || [],
-
-        total: Number(order.total) || 0,
-
-        currency: order.currency || "NZD",
-
-        status: order.status || "Pending Payment",
-
-        createdAt: order.createdAt,
-
-        updatedAt: order.updatedAt || null
-      };
-    });
+    const imageUrl =
+      "/uploads/" + req.file.filename;
 
     res.json({
       success: true,
-      orders: formattedOrders
+      message: "Image uploaded successfully.",
+      image: imageUrl,
+      imageUrl: imageUrl,
+      filename: req.file.filename
     });
 
   } catch (error) {
-    console.error("Get orders error:", error);
+    console.error("Image upload error:", error);
 
     res.status(500).json({
       success: false,
-      message: "Failed to load orders."
+      message: error.message || "Image upload failed."
     });
   }
 });
 
-// ===============================
-// UPDATE ORDER STATUS
-// ===============================
-app.put("/api/orders/:orderId/status", async (req, res) => {
-  try {
-    if (!ordersCollection) {
-      return res.status(500).json({
-        success: false,
-        message: "Database is not connected."
-      });
-    }
-
-    const { orderId } = req.params;
-    const { status } = req.body;
-
-    const allowedStatuses = [
-      "Pending Payment",
-      "Payment Received",
-      "Processing",
-      "Shipped",
-      "Delivered",
-      "Cancelled"
-    ];
-
-    if (!orderId) {
-      return res.status(400).json({
-        success: false,
-        message: "Order ID is required."
-      });
-    }
-
-    if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid order status."
-      });
-    }
-
-    const result = await ordersCollection.updateOne(
-      { orderId },
-      {
-        $set: {
-          status,
-          updatedAt: new Date()
-        }
-      }
-    );
-
-    if (result.matchedCount === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found."
-      });
-    }
-
-    res.json({
-      success: true,
-      message: "Order status updated successfully.",
-      orderId,
-      status
-    });
-
-  } catch (error) {
-    console.error("Update order status error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Failed to update order status."
-    });
-  }
-});
-
-// ==================================================
-// PRODUCTS
-// ==================================================
-
-// ===============================
+// ======================================
 // GET ALL PRODUCTS
-// ===============================
+// ======================================
+
 app.get("/api/products", async (req, res) => {
   try {
     if (!productsCollection) {
-      return res.status(500).json({
+      return res.status(503).json({
         success: false,
-        message: "Database is not connected."
+        message: "MongoDB is not connected."
       });
     }
 
     const products = await productsCollection
       .find({})
-      .sort({ createdAt: -1 })
+      .sort({ _id: -1 })
       .toArray();
 
     res.json({
       success: true,
-      products
+      products: products
     });
 
   } catch (error) {
@@ -296,186 +224,269 @@ app.get("/api/products", async (req, res) => {
   }
 });
 
-// ===============================
-// ADD PRODUCT
-// ===============================
-app.post("/api/products", async (req, res) => {
+// ======================================
+// GET SINGLE PRODUCT
+// ======================================
+
+app.get("/api/products/:id", async (req, res) => {
   try {
     if (!productsCollection) {
-      return res.status(500).json({
+      return res.status(503).json({
         success: false,
-        message: "Database is not connected."
+        message: "MongoDB is not connected."
       });
     }
 
-    const {
-      name,
-      category,
-      originalPrice,
-      offerPrice,
-      image,
-      stock,
-      onOffer,
-      description
-    } = req.body;
+    let product;
 
-    if (!name || !category || offerPrice === undefined) {
+    try {
+      product = await productsCollection.findOne({
+        _id: new ObjectId(req.params.id)
+      });
+    } catch (error) {
       return res.status(400).json({
         success: false,
-        message: "Product name, category and offer price are required."
+        message: "Invalid product ID."
       });
     }
 
-    const original = Number(originalPrice) || Number(offerPrice);
-    const offer = Number(offerPrice);
-
-    if (offer <= 0) {
-      return res.status(400).json({
+    if (!product) {
+      return res.status(404).json({
         success: false,
-        message: "Offer price must be greater than zero."
+        message: "Product not found."
       });
     }
-
-    const product = {
-      productId: "PROD-" + Date.now(),
-
-      name: String(name).trim(),
-
-      category: String(category).trim(),
-
-      description: String(description || "").trim(),
-
-      originalPrice: original,
-
-      offerPrice: offer,
-
-      image: String(image || "").trim(),
-
-      stock: Math.max(0, Number(stock) || 0),
-
-      onOffer:
-        onOffer === true ||
-        onOffer === "true",
-
-      currency: "NZD",
-
-      createdAt: new Date(),
-
-      updatedAt: new Date()
-    };
-
-    // Calculate discount percentage
-    if (product.originalPrice > product.offerPrice) {
-      product.discountPercent = Math.round(
-        ((product.originalPrice - product.offerPrice) /
-          product.originalPrice) *
-          100
-      );
-    } else {
-      product.discountPercent = 0;
-    }
-
-    const result = await productsCollection.insertOne(product);
 
     res.json({
       success: true,
-      message: "Product added successfully.",
-      product: {
-        ...product,
-        _id: result.insertedId
-      }
+      product: product
     });
 
   } catch (error) {
-    console.error("Add product error:", error);
+    console.error("Get product error:", error);
 
     res.status(500).json({
       success: false,
-      message: "Failed to add product."
+      message: "Failed to load product."
     });
   }
 });
 
-// ===============================
-// UPDATE PRODUCT
-// ===============================
-app.put("/api/products/:productId", async (req, res) => {
+// ======================================
+// CREATE PRODUCT
+// ======================================
+
+app.post("/api/products", async (req, res) => {
   try {
     if (!productsCollection) {
-      return res.status(500).json({
+      return res.status(503).json({
         success: false,
-        message: "Database is not connected."
+        message: "MongoDB is not connected."
       });
     }
 
-    const { productId } = req.params;
+    const product = {
+      name: req.body.name || "",
+      category: req.body.category || "",
 
-    const {
-      name,
-      category,
-      originalPrice,
-      offerPrice,
-      image,
-      stock,
-      onOffer,
-      description
-    } = req.body;
+      originalPrice:
+        Number(req.body.originalPrice) || 0,
 
-    if (!name || !category || offerPrice === undefined) {
-      return res.status(400).json({
-        success: false,
-        message: "Product name, category and offer price are required."
-      });
-    }
+      offerPrice:
+        Number(req.body.offerPrice) || 0,
 
-    const original = Number(originalPrice) || Number(offerPrice);
-    const offer = Number(offerPrice);
+      image:
+        req.body.image || "",
 
-    if (offer <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Offer price must be greater than zero."
-      });
-    }
-
-    let discountPercent = 0;
-
-    if (original > offer) {
-      discountPercent = Math.round(
-        ((original - offer) / original) * 100
-      );
-    }
-
-    const update = {
-      name: String(name).trim(),
-
-      category: String(category).trim(),
-
-      description: String(description || "").trim(),
-
-      originalPrice: original,
-
-      offerPrice: offer,
-
-      image: String(image || "").trim(),
-
-      stock: Math.max(0, Number(stock) || 0),
+      stock:
+        Number(req.body.stock) || 0,
 
       onOffer:
-        onOffer === true ||
-        onOffer === "true",
+        req.body.onOffer !== false,
 
-      currency: "NZD",
+      description:
+        req.body.description || "",
 
-      discountPercent,
-
+      createdAt: new Date(),
       updatedAt: new Date()
     };
 
-    const result = await productsCollection.updateOne(
-      { productId },
-      { $set: update }
-    );
+    if (!product.name) {
+      return res.status(400).json({
+        success: false,
+        message: "Product name is required."
+      });
+    }
+
+    const result =
+      await productsCollection.insertOne(product);
+
+    res.json({
+      success: true,
+      message: "Product added successfully.",
+      productId: result.insertedId,
+      product: product
+    });
+
+  } catch (error) {
+    console.error("Create product error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to create product."
+    });
+  }
+});
+
+// ======================================
+// IMPORT PRODUCTS
+// ======================================
+
+app.post("/api/products/import", async (req, res) => {
+  try {
+    if (!productsCollection) {
+      return res.status(503).json({
+        success: false,
+        message: "MongoDB is not connected."
+      });
+    }
+
+    const products =
+      req.body.products || req.body;
+
+    if (!Array.isArray(products)) {
+      return res.status(400).json({
+        success: false,
+        message: "Products must be supplied as an array."
+      });
+    }
+
+    if (products.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No products were supplied."
+      });
+    }
+
+    const cleanedProducts = products.map(product => ({
+      name: product.name || "",
+      category: product.category || "",
+
+      originalPrice:
+        Number(product.originalPrice) || 0,
+
+      offerPrice:
+        Number(product.offerPrice) || 0,
+
+      image:
+        product.image || "",
+
+      stock:
+        Number(product.stock) || 0,
+
+      onOffer:
+        product.onOffer !== false,
+
+      description:
+        product.description || "",
+
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }));
+
+    const result =
+      await productsCollection.insertMany(
+        cleanedProducts
+      );
+
+    res.json({
+      success: true,
+      message:
+        `${result.insertedCount} products imported successfully.`,
+      insertedCount:
+        result.insertedCount
+    });
+
+  } catch (error) {
+    console.error("Import products error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to import products."
+    });
+  }
+});
+
+// ======================================
+// UPDATE PRODUCT
+// ======================================
+
+app.put("/api/products/:id", async (req, res) => {
+  try {
+    if (!productsCollection) {
+      return res.status(503).json({
+        success: false,
+        message: "MongoDB is not connected."
+      });
+    }
+
+    let productId;
+
+    try {
+      productId = new ObjectId(req.params.id);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product ID."
+      });
+    }
+
+    const updateData = {
+      updatedAt: new Date()
+    };
+
+    if (req.body.name !== undefined) {
+      updateData.name = req.body.name;
+    }
+
+    if (req.body.category !== undefined) {
+      updateData.category = req.body.category;
+    }
+
+    if (req.body.originalPrice !== undefined) {
+      updateData.originalPrice =
+        Number(req.body.originalPrice) || 0;
+    }
+
+    if (req.body.offerPrice !== undefined) {
+      updateData.offerPrice =
+        Number(req.body.offerPrice) || 0;
+    }
+
+    if (req.body.image !== undefined) {
+      updateData.image = req.body.image;
+    }
+
+    if (req.body.stock !== undefined) {
+      updateData.stock =
+        Number(req.body.stock) || 0;
+    }
+
+    if (req.body.onOffer !== undefined) {
+      updateData.onOffer =
+        req.body.onOffer;
+    }
+
+    if (req.body.description !== undefined) {
+      updateData.description =
+        req.body.description;
+    }
+
+    const result =
+      await productsCollection.updateOne(
+        { _id: productId },
+        { $set: updateData }
+      );
 
     if (result.matchedCount === 0) {
       return res.status(404).json({
@@ -499,23 +510,35 @@ app.put("/api/products/:productId", async (req, res) => {
   }
 });
 
-// ===============================
+// ======================================
 // DELETE PRODUCT
-// ===============================
-app.delete("/api/products/:productId", async (req, res) => {
+// ======================================
+
+app.delete("/api/products/:id", async (req, res) => {
   try {
     if (!productsCollection) {
-      return res.status(500).json({
+      return res.status(503).json({
         success: false,
-        message: "Database is not connected."
+        message: "MongoDB is not connected."
       });
     }
 
-    const { productId } = req.params;
+    let productId;
 
-    const result = await productsCollection.deleteOne({
-      productId
-    });
+    try {
+      productId =
+        new ObjectId(req.params.id);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid product ID."
+      });
+    }
+
+    const result =
+      await productsCollection.deleteOne({
+        _id: productId
+      });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({
@@ -539,9 +562,210 @@ app.delete("/api/products/:productId", async (req, res) => {
   }
 });
 
-// ===============================
+// ======================================
+// CREATE ORDER
+// ======================================
+
+app.post("/api/orders", async (req, res) => {
+  try {
+    if (!ordersCollection) {
+      return res.status(503).json({
+        success: false,
+        message: "MongoDB is not connected."
+      });
+    }
+
+    const {
+      customerName,
+      phone,
+      email,
+      address,
+      productId,
+      productName,
+      quantity,
+      amount,
+      paymentMethod
+    } = req.body;
+
+    if (
+      !customerName ||
+      !phone ||
+      !productName
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Customer name, phone number and product are required."
+      });
+    }
+
+    const order = {
+      customerName:
+        customerName.trim(),
+
+      phone:
+        phone.trim(),
+
+      email:
+        email || "",
+
+      address:
+        address || "",
+
+      productId:
+        productId || "",
+
+      productName:
+        productName.trim(),
+
+      quantity:
+        Number(quantity) || 1,
+
+      amount:
+        Number(amount) || 0,
+
+      paymentMethod:
+        paymentMethod || "",
+
+      status:
+        "Pending",
+
+      createdAt:
+        new Date(),
+
+      updatedAt:
+        new Date()
+    };
+
+    const result =
+      await ordersCollection.insertOne(order);
+
+    res.json({
+      success: true,
+      message:
+        "Order received successfully.",
+
+      orderId:
+        result.insertedId
+    });
+
+  } catch (error) {
+    console.error("Create order error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to submit order."
+    });
+  }
+});
+
+// ======================================
+// GET ORDERS
+// ======================================
+
+app.get("/api/orders", async (req, res) => {
+  try {
+    if (!ordersCollection) {
+      return res.status(503).json({
+        success: false,
+        message: "MongoDB is not connected."
+      });
+    }
+
+    const orders =
+      await ordersCollection
+        .find({})
+        .sort({ createdAt: -1 })
+        .toArray();
+
+    res.json({
+      success: true,
+      orders: orders
+    });
+
+  } catch (error) {
+    console.error("Get orders error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to load orders."
+    });
+  }
+});
+
+// ======================================
+// UPDATE ORDER STATUS
+// ======================================
+
+app.patch("/api/orders/:id", async (req, res) => {
+  try {
+    if (!ordersCollection) {
+      return res.status(503).json({
+        success: false,
+        message: "MongoDB is not connected."
+      });
+    }
+
+    let orderId;
+
+    try {
+      orderId =
+        new ObjectId(req.params.id);
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order ID."
+      });
+    }
+
+    const status =
+      req.body.status;
+
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: "Order status is required."
+      });
+    }
+
+    const result =
+      await ordersCollection.updateOne(
+        { _id: orderId },
+        {
+          $set: {
+            status: status,
+            updatedAt: new Date()
+          }
+        }
+      );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found."
+      });
+    }
+
+    res.json({
+      success: true,
+      message:
+        "Order status updated successfully."
+    });
+
+  } catch (error) {
+    console.error("Update order error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to update order."
+    });
+  }
+});
+
+// ======================================
 // API 404
-// ===============================
+// ======================================
+
 app.use("/api", (req, res) => {
   res.status(404).json({
     success: false,
@@ -549,36 +773,42 @@ app.use("/api", (req, res) => {
   });
 });
 
-// ===============================
-// START SERVER
-// ===============================
-async function startServer() {
-  try {
-    if (!MONGODB_URI) {
-      console.error("MONGODB_URI is not set.");
-      process.exit(1);
-    }
+// ======================================
+// GENERAL ERROR HANDLER
+// ======================================
 
-    const client = new MongoClient(MONGODB_URI);
+app.use((error, req, res, next) => {
+  console.error("Server error:", error);
 
-    await client.connect();
-
-    db = client.db(DB_NAME);
-
-    ordersCollection = db.collection("orders");
-
-    productsCollection = db.collection("products");
-
-    console.log("MongoDB connected successfully.");
-
-    app.listen(PORT, () => {
-      console.log(`Temuoffer server running on port ${PORT}`);
+  if (error instanceof multer.MulterError) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Image upload error: " +
+        error.message
     });
-
-  } catch (error) {
-    console.error("MongoDB Connection Error:", error);
-    process.exit(1);
   }
+
+  res.status(500).json({
+    success: false,
+    message:
+      error.message ||
+      "Internal server error."
+  });
+});
+
+// ======================================
+// START SERVER
+// ======================================
+
+async function startServer() {
+  await connectDatabase();
+
+  app.listen(PORT, () => {
+    console.log(
+      `Temuoffer server running on port ${PORT}`
+    );
+  });
 }
 
 startServer();
